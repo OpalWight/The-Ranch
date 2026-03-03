@@ -1,0 +1,4 @@
+DROP INDEX IF EXISTS idx_files_status;
+ALTER TABLE files DROP COLUMN IF EXISTS processed_at;
+ALTER TABLE files DROP COLUMN IF EXISTS thumbnail_key;
+ALTER TABLE files DROP COLUMN IF EXISTS status;
