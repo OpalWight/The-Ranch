@@ -1,0 +1,25 @@
+# loki-stack Helm values
+# helm install loki grafana/loki-stack -f helm/values/loki.yaml -n monitoring
+
+loki:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: local-path
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+promtail:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

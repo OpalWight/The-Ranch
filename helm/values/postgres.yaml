@@ -1,0 +1,21 @@
+auth:
+  database: filesync
+  username: filesync
+  existingSecret: ""
+  password: "changeme-use-sealed-secrets-later"
+
+primary:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: "local-path"
+
+metrics:
+  enabled: true

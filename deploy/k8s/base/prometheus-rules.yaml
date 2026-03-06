@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: filesync-alerts
+  labels:
+    app: filesync
+spec:
+  groups:
+    - name: filesync.rules
+      rules:
+        - alert: HighErrorRate
+          expr: |
+            (
+              sum(rate(filesync_http_requests_total{status=~"5.."}[5m]))
+              /
+              sum(rate(filesync_http_requests_total[5m]))
+            ) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High HTTP 5xx error rate"
+            description: "More than 5% of requests are returning 5xx errors for the last 5 minutes."
+
+        - alert: WorkerQueueBacklog
+          expr: |
+            sum(redis_stream_group_lag{stream="filesync:tasks", group="filesync-workers"}) > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Worker queue backlog is high"
+            description: "More than 100 pending messages in the task queue for 10 minutes."
+
+        - alert: PodCrashLooping
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="default", pod=~"filesync-.*"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FileSynC pod is crash-looping"
+            description: "Pod {{ $labels.pod }} has restarted more than 3 times in the last hour."

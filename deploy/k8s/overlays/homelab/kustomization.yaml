@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+namespace: default
+
+images:
+  - name: the-ranch
+    newName: ghcr.io/albertvo/homelab/api # {"$imagepolicy": "flux-system:filesync-api:name"}
+    newTag: latest # {"$imagepolicy": "flux-system:filesync-api:tag"}
+  - name: the-ranch-worker
+    newName: ghcr.io/albertvo/homelab/worker # {"$imagepolicy": "flux-system:filesync-worker:name"}
+    newTag: latest # {"$imagepolicy": "flux-system:filesync-worker:tag"}

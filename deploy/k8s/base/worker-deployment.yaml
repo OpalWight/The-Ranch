@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filesync-worker
+  labels:
+    app: filesync
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filesync
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: filesync
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: the-ranch-worker:latest
+          args: []
+          ports:
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - secretRef:
+                name: filesync-db-credentials
+            - secretRef:
+                name: filesync-minio-credentials
+            - secretRef:
+                name: filesync-redis-credentials
+            - configMapRef:
+                name: filesync-config
+          livenessProbe:
+            exec:
+              command: ["/worker", "-healthcheck"]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

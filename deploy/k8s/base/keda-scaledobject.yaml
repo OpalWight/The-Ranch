@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: filesync-redis-auth
+type: Opaque
+stringData:
+  password: "changeme-use-sealed-secrets-later"
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: filesync-redis-trigger-auth
+spec:
+  secretTargetRef:
+    - parameter: password
+      name: filesync-redis-auth
+      key: password
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: filesync-worker
+  labels:
+    app: filesync
+    component: worker
+spec:
+  scaleTargetRef:
+    name: filesync-worker
+  pollingInterval: 15
+  cooldownPeriod: 60
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+    - type: redis-streams
+      metadata:
+        address: redis-master.cache.svc.cluster.local:6379
+        stream: filesync:tasks
+        consumerGroup: filesync-workers
+        lagCount: "10"
+      authenticationRef:
+        name: filesync-redis-trigger-auth

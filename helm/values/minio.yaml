@@ -1,0 +1,25 @@
+mode: standalone
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClass: "local-path"
+
+rootUser: minioadmin
+rootPassword: "changeme-minio-secret"
+
+buckets:
+  - name: filesync
+    policy: none
+    purge: false
+
+consoleIngress:
+  enabled: false

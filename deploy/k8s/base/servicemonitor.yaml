@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: filesync-api
+  labels:
+    app: filesync
+    component: api
+spec:
+  selector:
+    matchLabels:
+      app: filesync
+      component: api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

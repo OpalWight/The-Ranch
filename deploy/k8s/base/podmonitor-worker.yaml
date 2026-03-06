@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: filesync-worker
+  labels:
+    app: filesync
+    component: worker
+spec:
+  selector:
+    matchLabels:
+      app: filesync
+      component: worker
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s

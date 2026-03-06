@@ -1,0 +1,28 @@
+architecture: standalone
+
+auth:
+  enabled: true
+  password: "changeme-use-sealed-secrets-later"
+
+master:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: "local-path"
+
+metrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
