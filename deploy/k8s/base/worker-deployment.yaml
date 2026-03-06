@@ -17,6 +17,8 @@ spec:
         app: filesync
         component: worker
     spec:
+      imagePullSecrets:
+      - name: ghcr-auth
       containers:
         - name: worker
           image: the-ranch-worker:latest

@@ -7,3 +7,36 @@ data:
   MINIO_ENDPOINT: "minio.storage.svc.cluster.local:9000"
   MINIO_BUCKET: "filesync"
   MINIO_USE_SSL: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filesync-migrations
+data:
+  001_create_files.up.sql: |
+    CREATE TABLE IF NOT EXISTS files (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name        TEXT NOT NULL,
+        size_bytes  BIGINT NOT NULL,
+        mime_type   TEXT NOT NULL DEFAULT 'application/octet-stream',
+        checksum    TEXT NOT NULL,
+        storage_key TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_files_name ON files(name);
+    CREATE INDEX idx_files_created_at ON files(created_at);
+  001_create_files.down.sql: |
+    DROP TABLE IF EXISTS files;
+  002_add_file_status.up.sql: |
+    ALTER TABLE files ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
+    ALTER TABLE files ADD COLUMN thumbnail_key TEXT;
+    ALTER TABLE files ADD COLUMN processed_at TIMESTAMPTZ;
+
+    CREATE INDEX idx_files_status ON files(status);
+  002_add_file_status.down.sql: |
+    DROP INDEX IF EXISTS idx_files_status;
+    ALTER TABLE files DROP COLUMN IF EXISTS processed_at;
+    ALTER TABLE files DROP COLUMN IF EXISTS thumbnail_key;
+    ALTER TABLE files DROP COLUMN IF EXISTS status;

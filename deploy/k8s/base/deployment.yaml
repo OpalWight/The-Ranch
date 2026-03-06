@@ -29,6 +29,8 @@ spec:
           volumeMounts:
             - name: migrations
               mountPath: /migrations
+      imagePullSecrets:
+      - name: ghcr-auth
       containers:
         - name: api
           image: the-ranch:latest
