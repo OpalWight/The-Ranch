@@ -2,6 +2,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  - helmrepository.yaml
+  - helmrelease-postgres.yaml
+  - helmrelease-redis.yaml
+  - helmrelease-minio.yaml
   - deployment.yaml
   - service.yaml
   - configmap.yaml
