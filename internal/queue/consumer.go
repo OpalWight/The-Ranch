@@ -8,18 +8,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Consumer reads tasks from a Redis Stream consumer group.
+// Consumer manages reading and acknowledging tasks from a Redis Consumer Group.
 type Consumer struct {
 	client       *redis.Client
 	consumerName string
 }
 
-// NewConsumer creates a Consumer. consumerName should be unique per pod (e.g. os.Hostname()).
+// NewConsumer initializes a consumer with a unique name for reliable tracking.
 func NewConsumer(client *redis.Client, consumerName string) *Consumer {
 	return &Consumer{client: client, consumerName: consumerName}
 }
 
-// EnsureGroup creates the consumer group if it doesn't exist.
+// EnsureGroup creates the consumer group in Redis if it hasn't been initialized.
 func (c *Consumer) EnsureGroup(ctx context.Context) error {
 	err := c.client.XGroupCreateMkStream(ctx, StreamName, GroupName, "0").Err()
 	if err != nil && err.Error() != "BUSYGROUP Consumer Group name already exists" {
@@ -28,7 +28,7 @@ func (c *Consumer) EnsureGroup(ctx context.Context) error {
 	return nil
 }
 
-// Read blocks for up to blockTime waiting for new tasks. Returns parsed Tasks.
+// Read waits for and retrieves new tasks assigned to this consumer.
 func (c *Consumer) Read(ctx context.Context, count int64, blockTime time.Duration) ([]Task, error) {
 	streams, err := c.client.XReadGroup(ctx, &redis.XReadGroupArgs{
 		Group:    GroupName,
@@ -68,7 +68,7 @@ func (c *Consumer) Read(ctx context.Context, count int64, blockTime time.Duratio
 	return tasks, nil
 }
 
-// Ack acknowledges a message so it won't be re-delivered.
+// Ack confirms successful task completion to prevent re-delivery.
 func (c *Consumer) Ack(ctx context.Context, id string) error {
 	return c.client.XAck(ctx, StreamName, GroupName, id).Err()
 }

@@ -10,14 +10,17 @@ import (
 	"github.com/albertvo/the-ranch/internal/model"
 )
 
+// FileRepository handles database operations for file metadata.
 type FileRepository struct {
 	db *sql.DB
 }
 
+// NewFileRepository creates a new instance of FileRepository.
 func NewFileRepository(db *sql.DB) *FileRepository {
 	return &FileRepository{db: db}
 }
 
+// ConnectPostgres establishes a connection to the PostgreSQL database.
 func ConnectPostgres(databaseURL string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
@@ -31,6 +34,7 @@ func ConnectPostgres(databaseURL string) (*sql.DB, error) {
 
 const fileCols = `id, name, size_bytes, mime_type, checksum, storage_key, status, thumbnail_key, processed_at, created_at, updated_at`
 
+// scanFile is a helper to scan a database row into a File model.
 func scanFile(scanner interface{ Scan(...any) error }) (*model.File, error) {
 	var f model.File
 	err := scanner.Scan(
@@ -41,6 +45,7 @@ func scanFile(scanner interface{ Scan(...any) error }) (*model.File, error) {
 	return &f, err
 }
 
+// Create inserts a new file record into the database.
 func (r *FileRepository) Create(ctx context.Context, req model.CreateFileRequest) (*model.File, error) {
 	row := r.db.QueryRowContext(ctx,
 		`INSERT INTO files (name, size_bytes, mime_type, checksum, storage_key)
@@ -55,6 +60,7 @@ func (r *FileRepository) Create(ctx context.Context, req model.CreateFileRequest
 	return f, nil
 }
 
+// List retrieves all file records from the database, newest first.
 func (r *FileRepository) List(ctx context.Context) ([]model.File, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT `+fileCols+` FROM files ORDER BY created_at DESC`)
@@ -74,6 +80,7 @@ func (r *FileRepository) List(ctx context.Context) ([]model.File, error) {
 	return files, rows.Err()
 }
 
+// GetByID retrieves a single file record by its unique identifier.
 func (r *FileRepository) GetByID(ctx context.Context, id string) (*model.File, error) {
 	row := r.db.QueryRowContext(ctx,
 		`SELECT `+fileCols+` FROM files WHERE id = $1`, id,
@@ -88,6 +95,7 @@ func (r *FileRepository) GetByID(ctx context.Context, id string) (*model.File, e
 	return f, nil
 }
 
+// Delete removes a file record from the database by its ID.
 func (r *FileRepository) Delete(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM files WHERE id = $1`, id)
 	if err != nil {
@@ -103,6 +111,7 @@ func (r *FileRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// UpdateStatus changes the processing status of a file.
 func (r *FileRepository) UpdateStatus(ctx context.Context, id string, status string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE files SET status = $1, updated_at = NOW() WHERE id = $2`, status, id)
@@ -112,6 +121,7 @@ func (r *FileRepository) UpdateStatus(ctx context.Context, id string, status str
 	return nil
 }
 
+// SetThumbnailKey updates the storage key for a file's generated thumbnail.
 func (r *FileRepository) SetThumbnailKey(ctx context.Context, id string, thumbnailKey string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE files SET thumbnail_key = $1, updated_at = NOW() WHERE id = $2`, thumbnailKey, id)
@@ -121,6 +131,7 @@ func (r *FileRepository) SetThumbnailKey(ctx context.Context, id string, thumbna
 	return nil
 }
 
+// MarkProcessed sets a file's status to 'processed' and records the completion time.
 func (r *FileRepository) MarkProcessed(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE files SET status = 'processed', processed_at = NOW(), updated_at = NOW() WHERE id = $1`, id)
@@ -130,6 +141,7 @@ func (r *FileRepository) MarkProcessed(ctx context.Context, id string) error {
 	return nil
 }
 
+// ListStorageKeys retrieves all unique storage keys currently in use.
 func (r *FileRepository) ListStorageKeys(ctx context.Context) ([]string, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT storage_key FROM files WHERE storage_key IS NOT NULL`)

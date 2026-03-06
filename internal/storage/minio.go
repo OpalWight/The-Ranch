@@ -9,6 +9,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+// Storage defines the interface for interacting with object storage.
 type Storage interface {
 	Upload(ctx context.Context, key string, reader io.Reader, size int64, contentType string) error
 	Download(ctx context.Context, key string) (io.ReadCloser, error)
@@ -16,11 +17,13 @@ type Storage interface {
 	ListKeys(ctx context.Context, prefix string) ([]string, error)
 }
 
+// MinIOStorage implements the Storage interface using MinIO/S3.
 type MinIOStorage struct {
 	client *minio.Client
 	bucket string
 }
 
+// NewMinIOStorage creates a new MinIO client and initializes the storage provider.
 func NewMinIOStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinIOStorage, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
@@ -36,6 +39,7 @@ func NewMinIOStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool)
 	}, nil
 }
 
+// EnsureBucket checks if the configured bucket exists and creates it if it doesn't.
 func (s *MinIOStorage) EnsureBucket(ctx context.Context) error {
 	exists, err := s.client.BucketExists(ctx, s.bucket)
 	if err != nil {
@@ -49,6 +53,7 @@ func (s *MinIOStorage) EnsureBucket(ctx context.Context) error {
 	return nil
 }
 
+// Upload transfers data from a reader to a specific key in object storage.
 func (s *MinIOStorage) Upload(ctx context.Context, key string, reader io.Reader, size int64, contentType string) error {
 	_, err := s.client.PutObject(ctx, s.bucket, key, reader, size, minio.PutObjectOptions{
 		ContentType: contentType,
@@ -59,6 +64,7 @@ func (s *MinIOStorage) Upload(ctx context.Context, key string, reader io.Reader,
 	return nil
 }
 
+// Download retrieves an object from storage as a read closer.
 func (s *MinIOStorage) Download(ctx context.Context, key string) (io.ReadCloser, error) {
 	obj, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
 	if err != nil {
@@ -67,6 +73,7 @@ func (s *MinIOStorage) Download(ctx context.Context, key string) (io.ReadCloser,
 	return obj, nil
 }
 
+// Delete removes an object from storage by its key.
 func (s *MinIOStorage) Delete(ctx context.Context, key string) error {
 	err := s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{})
 	if err != nil {
@@ -75,6 +82,7 @@ func (s *MinIOStorage) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+// ListKeys returns all object keys that match the given prefix.
 func (s *MinIOStorage) ListKeys(ctx context.Context, prefix string) ([]string, error) {
 	var keys []string
 	for obj := range s.client.ListObjects(ctx, s.bucket, minio.ListObjectsOptions{Prefix: prefix, Recursive: true}) {

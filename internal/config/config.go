@@ -2,6 +2,7 @@ package config
 
 import "os"
 
+// Config holds all configuration values for the application.
 type Config struct {
 	Port        string
 	DatabaseURL string
@@ -18,6 +19,7 @@ type Config struct {
 	RedisPassword string
 }
 
+// Load reads configuration from environment variables with sensible defaults.
 func Load() *Config {
 	return &Config{
 		Port:        getEnv("SERVER_PORT", "8080"),
@@ -34,6 +36,7 @@ func Load() *Config {
 	}
 }
 
+// getEnv retrieves an environment variable or returns a default value if not set.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

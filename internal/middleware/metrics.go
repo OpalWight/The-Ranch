@@ -8,7 +8,7 @@ import (
 	"github.com/albertvo/the-ranch/internal/metrics"
 )
 
-// Metrics returns middleware that records HTTP request count and duration.
+// Metrics returns middleware that exports HTTP request metrics to Prometheus.
 func Metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

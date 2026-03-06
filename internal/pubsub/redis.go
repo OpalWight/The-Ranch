@@ -7,34 +7,34 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Publisher publishes messages to a channel.
+// Publisher defines the interface for sending messages to a specific channel.
 type Publisher interface {
 	Publish(ctx context.Context, channel string, payload string) error
 }
 
-// Subscriber subscribes to a channel and returns a channel of messages.
-// The returned function should be called to unsubscribe.
+// Subscriber defines the interface for receiving messages from a channel.
+// The returned function is used to gracefully unsubscribe.
 type Subscriber interface {
 	Subscribe(ctx context.Context, channel string) (<-chan string, func(), error)
 }
 
-// PubSub combines both Publisher and Subscriber interfaces.
+// PubSub combines Publisher and Subscriber for full messaging capabilities.
 type PubSub interface {
 	Publisher
 	Subscriber
 }
 
-// RedisPubSub implements PubSub using Redis.
+// RedisPubSub implements the PubSub interface using Redis as the backbone.
 type RedisPubSub struct {
 	client *redis.Client
 }
 
-// NewRedisPubSub creates a new RedisPubSub from a redis.Client.
+// NewRedisPubSub initializes a new Redis-based pub/sub provider.
 func NewRedisPubSub(client *redis.Client) *RedisPubSub {
 	return &RedisPubSub{client: client}
 }
 
-// ConnectRedis parses a Redis URL and returns a connected client.
+// ConnectRedis establishes a connection to a Redis server using a URL.
 func ConnectRedis(ctx context.Context, redisURL string) (*redis.Client, error) {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
@@ -50,7 +50,7 @@ func ConnectRedis(ctx context.Context, redisURL string) (*redis.Client, error) {
 	return client, nil
 }
 
-// Publish sends a message to the specified channel.
+// Publish broadcasts a message to all active subscribers of the given channel.
 func (r *RedisPubSub) Publish(ctx context.Context, channel string, payload string) error {
 	if err := r.client.Publish(ctx, channel, payload).Err(); err != nil {
 		return fmt.Errorf("publishing to %s: %w", channel, err)
@@ -58,12 +58,11 @@ func (r *RedisPubSub) Publish(ctx context.Context, channel string, payload strin
 	return nil
 }
 
-// Subscribe listens on the specified channel and returns a channel that receives messages.
-// The returned function should be called to close the subscription.
+// Subscribe returns a channel that receives payloads from the specified Redis channel.
 func (r *RedisPubSub) Subscribe(ctx context.Context, channel string) (<-chan string, func(), error) {
 	sub := r.client.Subscribe(ctx, channel)
 
-	// Verify the subscription is active
+	// Ensure the subscription is successfully established.
 	if _, err := sub.Receive(ctx); err != nil {
 		_ = sub.Close()
 		return nil, nil, fmt.Errorf("subscribing to %s: %w", channel, err)

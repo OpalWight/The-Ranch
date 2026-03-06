@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// File represents the metadata and state of a managed file.
 type File struct {
 	ID           string     `json:"id"`
 	Name         string     `json:"name"`
@@ -16,6 +17,7 @@ type File struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
+// CreateFileRequest defines the payload for creating a new file record.
 type CreateFileRequest struct {
 	Name       string  `json:"name"`
 	SizeBytes  int64   `json:"size_bytes"`

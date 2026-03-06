@@ -22,6 +22,7 @@ import (
 	_ "github.com/albertvo/the-ranch/internal/metrics" // register Prometheus metrics
 )
 
+// main initializes dependencies and starts the HTTP API server.
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 

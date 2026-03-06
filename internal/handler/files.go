@@ -20,6 +20,7 @@ import (
 	"github.com/albertvo/the-ranch/internal/storage"
 )
 
+// FileHandler coordinates file management operations across database, storage, and message queues.
 type FileHandler struct {
 	repo      *repository.FileRepository
 	storage   storage.Storage
@@ -28,21 +29,22 @@ type FileHandler struct {
 	logger    *slog.Logger
 }
 
+// NewFileHandler initializes a FileHandler with required repository and storage dependencies.
 func NewFileHandler(repo *repository.FileRepository, store storage.Storage, logger *slog.Logger) *FileHandler {
 	return &FileHandler{repo: repo, storage: store, logger: logger}
 }
 
-// SetPublisher sets the optional event publisher for file change notifications.
+// SetPublisher configures the handler to broadcast real-time events.
 func (h *FileHandler) SetPublisher(pub pubsub.Publisher) {
 	h.publisher = pub
 }
 
-// SetProducer sets the optional task queue producer for background processing.
+// SetProducer configures the handler to enqueue background processing tasks.
 func (h *FileHandler) SetProducer(p *queue.Producer) {
 	h.producer = p
 }
 
-// fileEvent represents a file change event published to Redis Pub/Sub.
+// fileEvent is the internal structure for broadcasting file state changes.
 type fileEvent struct {
 	Event     string `json:"event"`
 	FileID    string `json:"file_id"`
@@ -50,7 +52,7 @@ type fileEvent struct {
 	Timestamp string `json:"timestamp"`
 }
 
-// publishEvent publishes a file change event. It's a no-op if publisher is nil.
+// publishEvent broadcasts an event message if a publisher is configured.
 func (h *FileHandler) publishEvent(ctx context.Context, event string, fileID string, name string) {
 	if h.publisher == nil {
 		return
@@ -74,7 +76,7 @@ func (h *FileHandler) publishEvent(ctx context.Context, event string, fileID str
 	}
 }
 
-// Create handles metadata-only file record creation (no binary upload).
+// Create records metadata for a file that is managed externally or uploaded later.
 func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -99,9 +101,8 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, file)
 }
 
-// Upload handles multipart file upload — streams to MinIO, then stores metadata in Postgres.
+// Upload streams a file directly to storage and records its metadata.
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	// 512MB max
 	if err := r.ParseMultipartForm(512 << 20); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart form"})
 		return
@@ -114,7 +115,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Hash the file content while streaming to MinIO
 	hasher := sha256.New()
 	reader := io.TeeReader(file, hasher)
 
@@ -125,7 +125,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	storageKey := fmt.Sprintf("uploads/%s", header.Filename)
 
-	// Stream directly to MinIO — no full buffering in memory
+	// Stream directly to MinIO to minimize memory pressure.
 	if err := h.storage.Upload(r.Context(), storageKey, reader, header.Size, contentType); err != nil {
 		h.logger.Error("uploading to storage", "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage upload failed"})
@@ -134,7 +134,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
 
-	// Store metadata in Postgres
 	req := model.CreateFileRequest{
 		Name:       header.Filename,
 		SizeBytes:  header.Size,
@@ -146,7 +145,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	record, err := h.repo.Create(r.Context(), req)
 	if err != nil {
 		h.logger.Error("creating file record", "error", err)
-		// Best-effort cleanup of the uploaded object
 		_ = h.storage.Delete(r.Context(), storageKey)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
@@ -156,7 +154,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	h.publishEvent(r.Context(), "file_uploaded", record.ID, record.Name)
 
-	// Enqueue background processing task
 	if h.producer != nil {
 		_, err := h.producer.Enqueue(r.Context(), queue.TaskProcessUpload, map[string]string{
 			"file_id":     record.ID,
@@ -171,7 +168,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, record)
 }
 
-// Download proxies file content from MinIO to the client.
+// Download retrieves file content from storage and streams it to the client.
 func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -203,6 +200,7 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, obj)
 }
 
+// List returns a list of all managed files.
 func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	files, err := h.repo.List(r.Context())
 	if err != nil {
@@ -217,6 +215,7 @@ func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, files)
 }
 
+// GetByID retrieves metadata for a single file by its unique ID.
 func (h *FileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -234,11 +233,10 @@ func (h *FileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, file)
 }
 
-// Delete removes from both MinIO and Postgres.
+// Delete purges a file from both persistent storage and the database.
 func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	// Look up the record first to get the storage key
 	record, err := h.repo.GetByID(r.Context(), id)
 	if err != nil {
 		h.logger.Error("getting file for delete", "error", err)
@@ -250,7 +248,6 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete from MinIO first
 	if record.StorageKey != nil {
 		if err := h.storage.Delete(r.Context(), *record.StorageKey); err != nil {
 			h.logger.Error("deleting from storage", "error", err)
@@ -259,7 +256,6 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Then delete from Postgres
 	if err := h.repo.Delete(r.Context(), id); err != nil {
 		if err == sql.ErrNoRows {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "file not found"})

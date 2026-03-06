@@ -33,6 +33,7 @@ import (
 	"github.com/albertvo/the-ranch/internal/storage"
 )
 
+// main initializes the worker node and starts the task processing loop.
 func main() {
 	// Healthcheck flag for K8s exec probe on distroless/scratch
 	if len(os.Args) > 1 && os.Args[1] == "-healthcheck" {
@@ -167,6 +168,7 @@ func main() {
 	logger.Info("worker shutdown complete")
 }
 
+// processTask routes a task to its specific handler based on its type.
 func processTask(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, task queue.Task) error {
 	switch task.Type {
 	case queue.TaskProcessUpload:
@@ -180,6 +182,7 @@ func processTask(ctx context.Context, logger *slog.Logger, repo *repository.File
 	}
 }
 
+// handleProcessUpload verifies a file's integrity and updates its status in the database.
 func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, task queue.Task) error {
 	fileID := task.Payload["file_id"]
 	storageKey := task.Payload["storage_key"]
@@ -240,6 +243,7 @@ func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *reposit
 	return nil
 }
 
+// handleGenerateThumbnail creates a resized preview for supported image formats.
 func handleGenerateThumbnail(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, task queue.Task) error {
 	fileID := task.Payload["file_id"]
 	storageKey := task.Payload["storage_key"]
@@ -297,6 +301,7 @@ func handleGenerateThumbnail(ctx context.Context, logger *slog.Logger, repo *rep
 	return nil
 }
 
+// handleCleanupOrphans deletes objects from storage that are no longer referenced in the database.
 func handleCleanupOrphans(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage) error {
 	dbKeys, err := repo.ListStorageKeys(ctx)
 	if err != nil {

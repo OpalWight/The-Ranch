@@ -8,17 +8,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Producer enqueues tasks into a Redis Stream.
+// Producer handles enqueuing work items into the system's task stream.
 type Producer struct {
 	client *redis.Client
 }
 
-// NewProducer creates a Producer from an existing redis.Client.
+// NewProducer initializes a new task producer with a Redis client.
 func NewProducer(client *redis.Client) *Producer {
 	return &Producer{client: client}
 }
 
-// Enqueue adds a task to the stream. Returns the stream entry ID.
+// Enqueue serializes and pushes a new task to the Redis stream for processing.
 func (p *Producer) Enqueue(ctx context.Context, taskType TaskType, payload map[string]string) (string, error) {
 	values := map[string]interface{}{
 		"type":       string(taskType),
