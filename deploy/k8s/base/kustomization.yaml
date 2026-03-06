@@ -5,9 +5,9 @@ resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
-  - secret-db.yaml
-  - secret-minio.yaml
-  - secret-redis.yaml
+  - sealed-secret-db.yaml
+  - sealed-secret-minio.yaml
+  - sealed-secret-redis.yaml
   - ingress.yaml
   - worker-deployment.yaml
   - hpa-api.yaml

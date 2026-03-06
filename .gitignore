@@ -11,6 +11,8 @@ Thumbs.db
 
 # Go
 /bin/
+/api
+/worker
 /vendor/
 *.exe
 *.exe~
@@ -31,6 +33,7 @@ Thumbs.db
 kubeconfig
 *secret*.yaml
 !*secret*example*.yaml
+!sealed-secret-*.yaml
 
 # Build artifacts
 /dist/
