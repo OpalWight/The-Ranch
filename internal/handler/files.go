@@ -20,7 +20,6 @@ import (
 	"github.com/albertvo/the-ranch/internal/storage"
 )
 
-// FileHandler coordinates file management operations across database, storage, and message queues.
 type FileHandler struct {
 	repo      *repository.FileRepository
 	storage   storage.Storage
@@ -29,22 +28,18 @@ type FileHandler struct {
 	logger    *slog.Logger
 }
 
-// NewFileHandler initializes a FileHandler with required repository and storage dependencies.
 func NewFileHandler(repo *repository.FileRepository, store storage.Storage, logger *slog.Logger) *FileHandler {
 	return &FileHandler{repo: repo, storage: store, logger: logger}
 }
 
-// SetPublisher configures the handler to broadcast real-time events.
 func (h *FileHandler) SetPublisher(pub pubsub.Publisher) {
 	h.publisher = pub
 }
 
-// SetProducer configures the handler to enqueue background processing tasks.
 func (h *FileHandler) SetProducer(p *queue.Producer) {
 	h.producer = p
 }
 
-// fileEvent is the internal structure for broadcasting file state changes.
 type fileEvent struct {
 	Event     string `json:"event"`
 	FileID    string `json:"file_id"`
@@ -52,8 +47,7 @@ type fileEvent struct {
 	Timestamp string `json:"timestamp"`
 }
 
-// publishEvent broadcasts an event message if a publisher is configured.
-func (h *FileHandler) publishEvent(ctx context.Context, event string, fileID string, name string) {
+func (h *FileHandler) publishEvent(ctx context.Context, event, fileID, name string) {
 	if h.publisher == nil {
 		return
 	}
@@ -76,7 +70,6 @@ func (h *FileHandler) publishEvent(ctx context.Context, event string, fileID str
 	}
 }
 
-// Create records metadata for a file that is managed externally or uploaded later.
 func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -101,7 +94,6 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, file)
 }
 
-// Upload streams a file directly to storage and records its metadata.
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(512 << 20); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart form"})
@@ -125,7 +117,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	storageKey := fmt.Sprintf("uploads/%s", header.Filename)
 
-	// Stream directly to MinIO to minimize memory pressure.
 	if err := h.storage.Upload(r.Context(), storageKey, reader, header.Size, contentType); err != nil {
 		h.logger.Error("uploading to storage", "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage upload failed"})
@@ -168,7 +159,6 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, record)
 }
 
-// Download retrieves file content from storage and streams it to the client.
 func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -200,7 +190,6 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, obj)
 }
 
-// List returns a list of all managed files.
 func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	files, err := h.repo.List(r.Context())
 	if err != nil {
@@ -215,7 +204,6 @@ func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, files)
 }
 
-// GetByID retrieves metadata for a single file by its unique ID.
 func (h *FileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -233,7 +221,6 @@ func (h *FileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, file)
 }
 
-// Delete purges a file from both persistent storage and the database.
 func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 

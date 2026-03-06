@@ -111,31 +111,25 @@ func (r *FileRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// UpdateStatus changes the processing status of a file.
 func (r *FileRepository) UpdateStatus(ctx context.Context, id string, status string) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE files SET status = $1, updated_at = NOW() WHERE id = $2`, status, id)
-	if err != nil {
+	if _, err := r.db.ExecContext(ctx,
+		`UPDATE files SET status = $1, updated_at = NOW() WHERE id = $2`, status, id); err != nil {
 		return fmt.Errorf("updating status: %w", err)
 	}
 	return nil
 }
 
-// SetThumbnailKey updates the storage key for a file's generated thumbnail.
 func (r *FileRepository) SetThumbnailKey(ctx context.Context, id string, thumbnailKey string) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE files SET thumbnail_key = $1, updated_at = NOW() WHERE id = $2`, thumbnailKey, id)
-	if err != nil {
+	if _, err := r.db.ExecContext(ctx,
+		`UPDATE files SET thumbnail_key = $1, updated_at = NOW() WHERE id = $2`, thumbnailKey, id); err != nil {
 		return fmt.Errorf("setting thumbnail key: %w", err)
 	}
 	return nil
 }
 
-// MarkProcessed sets a file's status to 'processed' and records the completion time.
 func (r *FileRepository) MarkProcessed(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE files SET status = 'processed', processed_at = NOW(), updated_at = NOW() WHERE id = $1`, id)
-	if err != nil {
+	if _, err := r.db.ExecContext(ctx,
+		`UPDATE files SET status = 'processed', processed_at = NOW(), updated_at = NOW() WHERE id = $1`, id); err != nil {
 		return fmt.Errorf("marking processed: %w", err)
 	}
 	return nil

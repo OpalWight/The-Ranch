@@ -2,7 +2,6 @@ package config
 
 import "os"
 
-// Config holds all configuration values for the application.
 type Config struct {
 	Port        string
 	DatabaseURL string
@@ -15,11 +14,9 @@ type Config struct {
 	MinIOUseSSL    bool
 
 	// Redis
-	RedisURL      string
-	RedisPassword string
+	RedisURL string
 }
 
-// Load reads configuration from environment variables with sensible defaults.
 func Load() *Config {
 	return &Config{
 		Port:        getEnv("SERVER_PORT", "8080"),
@@ -31,12 +28,10 @@ func Load() *Config {
 		MinIOSecretKey: getEnv("MINIO_SECRET_KEY", ""),
 		MinIOUseSSL:    getEnv("MINIO_USE_SSL", "false") == "true",
 
-		RedisURL:      getEnv("REDIS_URL", ""),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisURL: getEnv("REDIS_URL", ""),
 	}
 }
 
-// getEnv retrieves an environment variable or returns a default value if not set.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

@@ -53,12 +53,10 @@ func (s *MinIOStorage) EnsureBucket(ctx context.Context) error {
 	return nil
 }
 
-// Upload transfers data from a reader to a specific key in object storage.
 func (s *MinIOStorage) Upload(ctx context.Context, key string, reader io.Reader, size int64, contentType string) error {
-	_, err := s.client.PutObject(ctx, s.bucket, key, reader, size, minio.PutObjectOptions{
+	if _, err := s.client.PutObject(ctx, s.bucket, key, reader, size, minio.PutObjectOptions{
 		ContentType: contentType,
-	})
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("uploading object: %w", err)
 	}
 	return nil
@@ -73,10 +71,8 @@ func (s *MinIOStorage) Download(ctx context.Context, key string) (io.ReadCloser,
 	return obj, nil
 }
 
-// Delete removes an object from storage by its key.
 func (s *MinIOStorage) Delete(ctx context.Context, key string) error {
-	err := s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{})
-	if err != nil {
+	if err := s.client.RemoveObject(ctx, s.bucket, key, minio.RemoveObjectOptions{}); err != nil {
 		return fmt.Errorf("deleting object: %w", err)
 	}
 	return nil

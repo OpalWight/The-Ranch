@@ -50,7 +50,6 @@ func ConnectRedis(ctx context.Context, redisURL string) (*redis.Client, error) {
 	return client, nil
 }
 
-// Publish broadcasts a message to all active subscribers of the given channel.
 func (r *RedisPubSub) Publish(ctx context.Context, channel string, payload string) error {
 	if err := r.client.Publish(ctx, channel, payload).Err(); err != nil {
 		return fmt.Errorf("publishing to %s: %w", channel, err)
