@@ -5,8 +5,7 @@
 
 <div class="app">
   <header>
-    <h1>The Ranch</h1>
-    <span class="subtitle">File Manager</span>
+    <h1>the ranch</h1>
   </header>
   <main>
     {@render children()}
@@ -22,21 +21,16 @@
 
   header {
     display: flex;
-    align-items: baseline;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    background: var(--color-surface);
+    align-items: center;
+    padding: 0.75rem 1.5rem;
     border-bottom: 1px solid var(--color-border);
   }
 
   header h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  .subtitle {
-    color: var(--color-text-muted);
+    font-family: var(--font-mono);
     font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
   }
 
   main {

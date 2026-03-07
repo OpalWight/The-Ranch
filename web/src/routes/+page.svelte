@@ -148,7 +148,7 @@
 <!-- Breadcrumb -->
 <nav class="breadcrumb">
   <button class="crumb" class:active={!currentDirId} onclick={() => navigateTo(null)}>
-    Root
+    ~
   </button>
   {#each breadcrumb as dir}
     <span class="sep">/</span>
@@ -213,18 +213,28 @@
   {#if loading}
     <p class="empty">Loading...</p>
   {:else if directories.length === 0 && files.length === 0}
-    <p class="empty">This folder is empty. Drop files here or use the buttons above.</p>
+    <p class="empty">Empty directory. Drop files or use the toolbar.</p>
   {:else}
-    <div class="grid">
+    <div class="list">
+      <!-- Column header -->
+      <div class="list-header">
+        <span class="col-name">Name</span>
+        <span class="col-size">Size</span>
+        <span class="col-date">Modified</span>
+        <span class="col-action"></span>
+      </div>
+
       <!-- Directories -->
       {#each directories as dir}
-        <div class="card dir-card">
-          <button class="card-main" onclick={() => navigateTo(dir.id)}>
-            <span class="icon folder-icon">dir</span>
-            <span class="card-name">{dir.name}</span>
+        <div class="list-row">
+          <button class="row-main" onclick={() => navigateTo(dir.id)}>
+            <span class="icon">dir</span>
+            <span class="row-name">{dir.name}</span>
           </button>
+          <span class="col-size"></span>
+          <span class="col-date"></span>
           <button
-            class="card-action danger"
+            class="row-action"
             title="Delete folder"
             onclick={() => (confirmDelete = { type: 'dir', id: dir.id, name: dir.name })}
           >
@@ -235,14 +245,15 @@
 
       <!-- Files -->
       {#each files as file}
-        <div class="card file-card">
-          <a class="card-main" href={downloadUrl(file.id)} download>
-            <span class="icon file-icon">{fileIcon(file.mime_type)}</span>
-            <span class="card-name">{file.name}</span>
-            <span class="card-meta">{formatBytes(file.size_bytes)}</span>
+        <div class="list-row">
+          <a class="row-main" href={downloadUrl(file.id)} download>
+            <span class="icon">{fileIcon(file.mime_type)}</span>
+            <span class="row-name">{file.name}</span>
           </a>
+          <span class="col-size">{formatBytes(file.size_bytes)}</span>
+          <span class="col-date">{formatDate(file.created_at)}</span>
           <button
-            class="card-action danger"
+            class="row-action"
             title="Delete file"
             onclick={() => (confirmDelete = { type: 'file', id: file.id, name: file.name })}
           >
@@ -260,7 +271,7 @@
   <div class="modal-backdrop" role="dialog" aria-modal="true" onclick={() => (confirmDelete = null)}>
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div class="modal" onclick={(e) => e.stopPropagation()}>
-      <p>Delete <strong>{confirmDelete.name}</strong>?</p>
+      <p>Delete <strong class="modal-filename">{confirmDelete.name}</strong>?</p>
       {#if confirmDelete.type === 'dir'}
         <p class="modal-hint">Directory must be empty.</p>
       {/if}
@@ -272,10 +283,10 @@
   </div>
 {/if}
 
-<!-- Activity sidebar -->
+<!-- Activity feed -->
 {#if events.length > 0}
   <aside class="activity">
-    <h3>Recent Activity</h3>
+    <h3>Activity</h3>
     <ul>
       {#each events as evt}
         <li>
@@ -293,26 +304,28 @@
   .breadcrumb {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.125rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
+    font-family: var(--font-mono);
   }
   .crumb {
     background: none;
-    color: var(--color-primary);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    padding: 0.25rem 0.375rem;
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
   }
   .crumb:hover {
-    text-decoration: underline;
+    color: var(--color-primary);
   }
   .crumb.active {
     color: var(--color-text);
-    font-weight: 600;
+    font-weight: 400;
   }
   .sep {
     color: var(--color-text-muted);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 
   /* Toolbar */
@@ -325,15 +338,17 @@
 
   /* Buttons */
   .btn {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
+    font-family: var(--font-mono);
   }
   .btn-primary {
-    background: var(--color-primary);
-    color: #fff;
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
   }
   .btn-primary:hover {
-    background: var(--color-primary-hover);
+    background: rgba(92, 224, 216, 0.08);
   }
   .btn-danger {
     background: var(--color-danger);
@@ -363,64 +378,70 @@
   }
   .new-folder input {
     width: 250px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
   }
 
   /* Error */
   .error-banner {
-    background: rgba(239, 68, 68, 0.15);
+    border-left: 2px solid var(--color-danger);
     color: var(--color-danger);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
     margin-bottom: 1rem;
-    font-size: 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
   }
 
   /* Drop zone */
   .drop-zone {
-    border: 2px dashed var(--color-border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    min-height: 300px;
-    transition: border-color 0.15s, background 0.15s;
+    min-height: 200px;
+    transition: border-color 0.1s, background 0.1s;
   }
   .drop-zone.drag-over {
-    border-color: var(--color-primary);
-    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid var(--color-primary);
+    background: rgba(92, 224, 216, 0.04);
   }
 
   .empty {
     text-align: center;
     color: var(--color-text-muted);
     padding: 3rem 1rem;
-    font-size: 0.95rem;
+    font-size: 0.875rem;
+    font-family: var(--font-mono);
   }
 
-  /* Grid */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 0.75rem;
+  /* List layout */
+  .list {
+    display: flex;
+    flex-direction: column;
   }
-
-  /* Card */
-  .card {
+  .list-header {
     display: flex;
     align-items: center;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+  .list-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.1s;
+  }
+  .list-row:hover {
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    transition: border-color 0.15s;
   }
-  .card:hover {
-    border-color: var(--color-primary);
-  }
-  .card-main {
+
+  .row-main {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.5rem 0;
     text-decoration: none;
     color: inherit;
     background: none;
@@ -428,52 +449,66 @@
     text-align: left;
     cursor: pointer;
     min-width: 0;
+    font-family: inherit;
   }
-  .card-name {
+  .row-name {
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
-  .card-meta {
-    color: var(--color-text-muted);
+  .col-name {
+    flex: 1;
+  }
+  .col-size {
+    width: 80px;
+    text-align: right;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
-    white-space: nowrap;
-  }
-  .card-action {
-    padding: 0.75rem;
-    background: none;
     color: var(--color-text-muted);
-    font-size: 1.125rem;
-    line-height: 1;
-    border-radius: 0;
+    flex-shrink: 0;
   }
-  .card-action.danger:hover {
-    color: var(--color-danger);
-    background: rgba(239, 68, 68, 0.1);
+  .col-date {
+    width: 140px;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+  .col-action {
+    width: 36px;
+    flex-shrink: 0;
   }
 
   /* Icons */
   .icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.625rem;
-    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
     text-transform: uppercase;
+    width: 2rem;
+    text-align: center;
     flex-shrink: 0;
   }
-  .folder-icon {
-    background: rgba(245, 158, 11, 0.2);
-    color: var(--color-warning);
+
+  .row-action {
+    width: 36px;
+    padding: 0.5rem 0;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.1s, color 0.1s;
   }
-  .file-icon {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--color-primary);
+  .list-row:hover .row-action {
+    opacity: 1;
+  }
+  .row-action:hover {
+    color: var(--color-danger);
   }
 
   /* Modal */
@@ -489,17 +524,22 @@
   .modal {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
+    padding: 1.25rem;
     min-width: 300px;
     max-width: 90vw;
   }
   .modal p {
     margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+  }
+  .modal-filename {
+    font-family: var(--font-mono);
+    color: var(--color-primary);
   }
   .modal-hint {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
+    font-family: var(--font-mono);
   }
   .modal-actions {
     display: flex;
@@ -511,11 +551,15 @@
   .activity {
     margin-top: 2rem;
     border-top: 1px solid var(--color-border);
-    padding-top: 1rem;
+    padding-top: 0.75rem;
   }
   .activity h3 {
-    font-size: 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: var(--color-text-muted);
+    font-weight: 400;
     margin-bottom: 0.5rem;
   }
   .activity ul {
@@ -524,14 +568,15 @@
   .activity li {
     display: flex;
     gap: 0.5rem;
-    font-size: 0.8rem;
-    padding: 0.25rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.125rem 0;
     color: var(--color-text-muted);
   }
   .evt-type {
     color: var(--color-success);
-    font-weight: 500;
-    min-width: 90px;
+    font-weight: 400;
+    min-width: 80px;
   }
   .evt-name {
     flex: 1;
@@ -545,8 +590,12 @@
   }
 
   @media (max-width: 600px) {
-    .grid {
-      grid-template-columns: 1fr;
+    .col-date,
+    .list-header .col-date {
+      display: none;
+    }
+    .col-size {
+      width: 60px;
     }
     .new-folder {
       flex-direction: column;
