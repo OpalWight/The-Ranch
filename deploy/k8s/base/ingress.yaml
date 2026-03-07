@@ -3,10 +3,11 @@ kind: Ingress
 metadata:
   name: filesync-ingress
   namespace: default
-  annotations:
-    tailscale.com/hostname: "filesync"
 spec:
   ingressClassName: tailscale
+  tls:
+    - hosts:
+        - filesync
   rules:
     - http:
         paths:
