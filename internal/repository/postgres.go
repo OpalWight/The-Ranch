@@ -111,6 +111,47 @@ func (r *FileRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *FileRepository) Update(ctx context.Context, id string, data map[string]interface{}) (*model.File, error) {
+	if len(data) == 0 {
+		return r.GetByID(ctx, id)
+	}
+
+	query := `UPDATE files SET `
+	args := []interface{}{}
+	i := 1
+	for k, v := range data {
+		query += fmt.Sprintf("%s = $%d, ", k, i)
+		args = append(args, v)
+		i++
+	}
+	query += fmt.Sprintf("updated_at = NOW() WHERE id = $%d RETURNING ", i) + fileCols
+	args = append(args, id)
+
+	row := r.db.QueryRowContext(ctx, query, args...)
+	return scanFile(row)
+}
+
+func (r *FileRepository) BulkDelete(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	// Note: In a real app we might want to use ANY($1) or a temporary table for many IDs.
+	// For simplicity, we use a single query with many placeholders.
+	query := "DELETE FROM files WHERE id IN ("
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		if i > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+	query += ")"
+
+	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
+}
+
 func (r *FileRepository) UpdateStatus(ctx context.Context, id string, status string) error {
 	if _, err := r.db.ExecContext(ctx,
 		`UPDATE files SET status = $1, updated_at = NOW() WHERE id = $2`, status, id); err != nil {

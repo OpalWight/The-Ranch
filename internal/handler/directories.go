@@ -144,6 +144,33 @@ func (h *DirectoryHandler) Contents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *DirectoryHandler) BulkDelete(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs []string `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	var deletable []string
+	for _, id := range req.IDs {
+		hasChildren, err := h.dirRepo.HasChildren(r.Context(), id)
+		if err != nil || hasChildren {
+			continue
+		}
+		deletable = append(deletable, id)
+	}
+
+	if err := h.dirRepo.BulkDelete(r.Context(), deletable); err != nil {
+		h.logger.Error("bulk deleting directories", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Delete handles DELETE /api/v1/directories/{id}.
 func (h *DirectoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

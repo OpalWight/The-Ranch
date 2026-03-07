@@ -197,6 +197,37 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, obj)
 }
 
+func (h *FileHandler) Thumbnail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	record, err := h.repo.GetByID(r.Context(), id)
+	if err != nil {
+		h.logger.Error("getting file for thumbnail", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if record == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "file not found"})
+		return
+	}
+	if record.ThumbnailKey == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "thumbnail not found"})
+		return
+	}
+
+	obj, err := h.storage.Download(r.Context(), *record.ThumbnailKey)
+	if err != nil {
+		h.logger.Error("downloading thumbnail from storage", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "storage download failed"})
+		return
+	}
+	defer obj.Close()
+
+	w.Header().Set("Content-Type", "image/webp")
+	w.Header().Set("Cache-Control", "public, max-age=31536000")
+	io.Copy(w, obj)
+}
+
 func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	directoryID := r.URL.Query().Get("directory_id")
 
@@ -238,6 +269,63 @@ func (h *FileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, file)
+}
+
+func (h *FileHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var data map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	// Sanitize data: only allow directory_id and name for now
+	allowed := map[string]bool{"directory_id": true, "name": true}
+	sanitized := make(map[string]interface{})
+	for k, v := range data {
+		if allowed[k] {
+			sanitized[k] = v
+		}
+	}
+
+	record, err := h.repo.Update(r.Context(), id, sanitized)
+	if err != nil {
+		h.logger.Error("updating file", "error", err, "id", id)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	h.publishEvent(r.Context(), "file_updated", record.ID, record.Name)
+	writeJSON(w, http.StatusOK, record)
+}
+
+func (h *FileHandler) BulkDelete(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs []string `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	for _, id := range req.IDs {
+		record, err := h.repo.GetByID(r.Context(), id)
+		if err != nil || record == nil {
+			continue
+		}
+		if record.StorageKey != nil {
+			_ = h.storage.Delete(r.Context(), *record.StorageKey)
+		}
+		h.publishEvent(r.Context(), "file_deleted", record.ID, record.Name)
+	}
+
+	if err := h.repo.BulkDelete(r.Context(), req.IDs); err != nil {
+		h.logger.Error("bulk deleting files", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {

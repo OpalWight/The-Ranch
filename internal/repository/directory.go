@@ -94,6 +94,25 @@ func (r *DirectoryRepository) HasChildren(ctx context.Context, id string) (bool,
 	return count > 0, nil
 }
 
+func (r *DirectoryRepository) BulkDelete(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	query := "DELETE FROM directories WHERE id IN ("
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		if i > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+	query += ")"
+
+	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
+}
+
 // Delete removes a directory record from the database by its ID.
 func (r *DirectoryRepository) Delete(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM directories WHERE id = $1`, id)

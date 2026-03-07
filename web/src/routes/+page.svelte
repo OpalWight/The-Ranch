@@ -6,9 +6,13 @@
     getDirectoryContents,
     createDirectory,
     deleteDirectory,
+    bulkDeleteDirectories,
     uploadFile,
+    updateFile,
     deleteFile,
+    bulkDeleteFiles,
     downloadUrl,
+    thumbnailUrl,
     getStorageStats,
   } from '$lib/api';
   import { connectSSE } from '$lib/sse';
@@ -31,6 +35,7 @@
 
   // Upload
   let uploading = $state(false);
+  let activeUploads = $state<{ name: string; percent: number }[]>([]);
   let dragOver = $state(false);
 
   // Storage stats
@@ -38,6 +43,71 @@
 
   // Delete confirm
   let confirmDelete: { type: 'file' | 'dir'; id: string; name: string } | null = $state(null);
+
+  // Selection
+  let selectedIds = $state<Set<string>>(new Set());
+  let showMoveModal = $state(false);
+  let targetDirId = $state('');
+
+  // Hover preview
+  let hoveredFileId = $state<string | null>(null);
+
+  function toggleSelect(id: string) {
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id);
+    } else {
+      selectedIds.add(id);
+    }
+    selectedIds = new Set(selectedIds);
+  }
+
+  function toggleSelectAll() {
+    const allIds = [...directories.map(d => d.id), ...files.map(f => f.id)];
+    if (selectedIds.size === allIds.length && allIds.length > 0) {
+      selectedIds = new Set();
+    } else {
+      selectedIds = new Set(allIds);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} items?`)) return;
+
+    const fileIds = files.filter(f => selectedIds.has(f.id)).map(f => f.id);
+    const dirIds = directories.filter(d => selectedIds.has(d.id)).map(d => d.id);
+
+    try {
+      await Promise.all([
+        fileIds.length > 0 ? bulkDeleteFiles(fileIds) : Promise.resolve(),
+        dirIds.length > 0 ? bulkDeleteDirectories(dirIds) : Promise.resolve(),
+      ]);
+      selectedIds = new Set();
+      await loadContents();
+    } catch (e: any) {
+      error = e.message;
+    }
+  }
+
+  async function handleBulkMove() {
+    if (selectedIds.size === 0) return;
+    const destId = targetDirId === 'root' ? null : targetDirId;
+    
+    const fileIds = files.filter(f => selectedIds.has(f.id)).map(f => f.id);
+    const dirIds = directories.filter(d => selectedIds.has(d.id)).map(d => d.id);
+
+    try {
+      await Promise.all([
+        ...fileIds.map(id => updateFile(id, { directory_id: destId })),
+        ...dirIds.map(id => updateDirectory(id, { parent_id: destId || undefined })),
+      ]);
+      selectedIds = new Set();
+      showMoveModal = false;
+      await loadContents();
+    } catch (e: any) {
+      error = e.message;
+    }
+  }
 
   let sse: EventSource | null = null;
 
@@ -99,10 +169,24 @@
     if (!fileList?.length) return;
     uploading = true;
     error = null;
-    try {
-      for (const f of fileList) {
-        await uploadFile(f, currentDirId ?? undefined);
+    
+    const filesArray = Array.from(fileList);
+    const uploadPromises = filesArray.map(async (file) => {
+      const uploadItem = { name: file.name, percent: 0 };
+      activeUploads = [...activeUploads, uploadItem];
+
+      try {
+        await uploadFile(file, currentDirId ?? undefined, (p) => {
+          uploadItem.percent = p;
+          activeUploads = [...activeUploads]; // trigger reactivity
+        });
+      } finally {
+        activeUploads = activeUploads.filter(u => u !== uploadItem);
       }
+    });
+
+    try {
+      await Promise.all(uploadPromises);
       await loadContents();
     } catch (e: any) {
       error = e.message;
@@ -178,19 +262,31 @@
 <!-- Toolbar -->
 <div class="toolbar">
   <div class="toolbar-actions">
-    <button class="btn btn-primary" onclick={() => (showNewFolder = !showNewFolder)}>
-      New Folder
-    </button>
-    <label class="btn btn-primary upload-btn">
-      {uploading ? 'Uploading...' : 'Upload Files'}
-      <input
-        type="file"
-        multiple
-        hidden
-        disabled={uploading}
-        onchange={(e) => handleUpload(e.currentTarget.files)}
-      />
-    </label>
+    {#if selectedIds.size > 0}
+      <button class="btn btn-danger" onclick={handleBulkDelete}>
+        Delete ({selectedIds.size})
+      </button>
+      <button class="btn btn-primary" onclick={() => showMoveModal = true}>
+        Move ({selectedIds.size})
+      </button>
+      <button class="btn btn-ghost" onclick={() => selectedIds = new Set()}>
+        Cancel
+      </button>
+    {:else}
+      <button class="btn btn-primary" onclick={() => (showNewFolder = !showNewFolder)}>
+        New Folder
+      </button>
+      <label class="btn btn-primary upload-btn">
+        {uploading ? 'Uploading...' : 'Upload Files'}
+        <input
+          type="file"
+          multiple
+          hidden
+          disabled={uploading}
+          onchange={(e) => handleUpload(e.currentTarget.files)}
+        />
+      </label>
+    {/if}
   </div>
   {#if storageStats}
     <div class="storage-stats">
@@ -234,12 +330,38 @@
 >
   {#if loading}
     <p class="empty">Loading...</p>
-  {:else if directories.length === 0 && files.length === 0}
+  {:else if directories.length === 0 && files.length === 0 && activeUploads.length === 0}
     <p class="empty">Empty directory. Drop files or use the toolbar.</p>
   {:else}
     <div class="list">
+      <!-- Active Uploads -->
+      {#each activeUploads as upload}
+        <div class="list-row uploading">
+          <span class="col-select"></span>
+          <div class="row-main">
+            <span class="icon">up</span>
+            <div class="upload-info">
+              <span class="row-name">{upload.name}</span>
+              <div class="progress-container">
+                <div class="progress-bar" style="width: {upload.percent}%"></div>
+              </div>
+            </div>
+          </div>
+          <span class="col-size">{upload.percent}%</span>
+          <span class="col-date"></span>
+          <span class="col-action"></span>
+        </div>
+      {/each}
+
       <!-- Column header -->
       <div class="list-header">
+        <span class="col-select">
+          <input 
+            type="checkbox" 
+            checked={selectedIds.size > 0 && selectedIds.size === (directories.length + files.length)}
+            onchange={toggleSelectAll}
+          />
+        </span>
         <span class="col-name">Name</span>
         <span class="col-size">Size</span>
         <span class="col-date">Modified</span>
@@ -248,7 +370,10 @@
 
       <!-- Directories -->
       {#each directories as dir}
-        <div class="list-row">
+        <div class="list-row" class:selected={selectedIds.has(dir.id)}>
+          <span class="col-select">
+            <input type="checkbox" checked={selectedIds.has(dir.id)} onchange={() => toggleSelect(dir.id)} />
+          </span>
           <button class="row-main" onclick={() => navigateTo(dir.id)}>
             <span class="icon">dir</span>
             <span class="row-name">{dir.name}</span>
@@ -267,10 +392,24 @@
 
       <!-- Files -->
       {#each files as file}
-        <div class="list-row">
-          <a class="row-main" href={downloadUrl(file.id)} download>
+        <div class="list-row" class:selected={selectedIds.has(file.id)}>
+          <span class="col-select">
+            <input type="checkbox" checked={selectedIds.has(file.id)} onchange={() => toggleSelect(file.id)} />
+          </span>
+          <a 
+            class="row-main" 
+            href={downloadUrl(file.id)} 
+            download
+            onmouseenter={() => (hoveredFileId = file.id)}
+            onmouseleave={() => (hoveredFileId = null)}
+          >
             <span class="icon">{fileIcon(file.mime_type)}</span>
             <span class="row-name">{file.name}</span>
+            {#if hoveredFileId === file.id && file.thumbnail_key}
+              <div class="preview-popup">
+                <img src={thumbnailUrl(file.id)} alt="Preview" />
+              </div>
+            {/if}
           </a>
           <span class="col-size">{formatBytes(file.size_bytes)}</span>
           <span class="col-date">{formatDate(file.created_at)}</span>
@@ -300,6 +439,26 @@
       <div class="modal-actions">
         <button class="btn btn-danger" onclick={handleDelete}>Delete</button>
         <button class="btn btn-ghost" onclick={() => (confirmDelete = null)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Move confirm modal -->
+{#if showMoveModal}
+  <div class="modal-backdrop" role="dialog" aria-modal="true" onclick={() => (showMoveModal = false)}>
+    <div class="modal" onclick={(e) => e.stopPropagation()}>
+      <p>Move <strong>{selectedIds.size}</strong> items to:</p>
+      <div class="move-input">
+        <input
+          type="text"
+          placeholder="Target Directory ID (or 'root')"
+          bind:value={targetDirId}
+        />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick={handleBulkMove}>Move</button>
+        <button class="btn btn-ghost" onclick={() => (showMoveModal = false)}>Cancel</button>
       </div>
     </div>
   </div>
@@ -370,6 +529,11 @@
     font-size: 0.8125rem;
     font-weight: 500;
     font-family: var(--font-mono);
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
   .btn-primary {
     background: transparent;
@@ -398,6 +562,9 @@
     cursor: pointer;
     display: inline-flex;
     align-items: center;
+    padding: 0.5rem 1rem;
+    box-sizing: border-box;
+    height: 38px; /* Standardize height */
   }
 
   /* Storage stats */
@@ -482,6 +649,27 @@
   .list-row:hover {
     background: var(--color-surface);
   }
+  .list-row.selected {
+    background: rgba(92, 224, 216, 0.08);
+  }
+
+  .col-select {
+    width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .col-select input[type="checkbox"] {
+    cursor: pointer;
+  }
+  .move-input {
+    margin: 1rem 0;
+  }
+  .move-input input {
+    width: 100%;
+    font-family: var(--font-mono);
+  }
 
   .row-main {
     display: flex;
@@ -497,6 +685,23 @@
     cursor: pointer;
     min-width: 0;
     font-family: inherit;
+    position: relative; /* For preview positioning */
+  }
+  .preview-popup {
+    position: absolute;
+    left: 2rem;
+    top: -110px;
+    z-index: 10;
+    background: var(--color-surface);
+    border: 1px solid var(--color-primary);
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    pointer-events: none;
+  }
+  .preview-popup img {
+    max-width: 200px;
+    max-height: 200px;
+    display: block;
   }
   .row-name {
     flex: 1;
@@ -634,6 +839,30 @@
   }
   .evt-time {
     white-space: nowrap;
+  }
+
+  .uploading {
+    background: rgba(92, 224, 216, 0.04);
+  }
+  .upload-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .progress-container {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 300px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.1s linear;
   }
 
   @media (max-width: 600px) {

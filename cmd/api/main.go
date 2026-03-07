@@ -105,11 +105,14 @@ func main() {
 	mux.HandleFunc("POST /api/v1/files", fileHandler.Create)
 	mux.HandleFunc("GET /api/v1/files", fileHandler.List)
 	mux.HandleFunc("GET /api/v1/files/{id}", fileHandler.GetByID)
+	mux.HandleFunc("PATCH /api/v1/files/{id}", fileHandler.Update)
 	mux.HandleFunc("DELETE /api/v1/files/{id}", fileHandler.Delete)
+	mux.HandleFunc("DELETE /api/v1/files/bulk", fileHandler.BulkDelete)
 
 	// File upload/download (binary)
 	mux.HandleFunc("POST /api/v1/files/upload", fileHandler.Upload)
 	mux.HandleFunc("GET /api/v1/files/{id}/download", fileHandler.Download)
+	mux.HandleFunc("GET /api/v1/files/{id}/thumbnail", fileHandler.Thumbnail)
 
 	// Directory CRUD
 	mux.HandleFunc("POST /api/v1/directories", dirHandler.Create)
@@ -118,6 +121,7 @@ func main() {
 	mux.HandleFunc("GET /api/v1/directories/{id}/contents", dirHandler.Contents)
 	mux.HandleFunc("PATCH /api/v1/directories/{id}", dirHandler.Update)
 	mux.HandleFunc("DELETE /api/v1/directories/{id}", dirHandler.Delete)
+	mux.HandleFunc("DELETE /api/v1/directories/bulk", dirHandler.BulkDelete)
 
 	// Storage stats
 	mux.HandleFunc("GET /api/v1/storage/stats", storageHandler.Stats)
