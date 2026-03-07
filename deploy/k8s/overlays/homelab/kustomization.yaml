@@ -1,16 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   - ../../base
-
 images:
   - name: the-ranch
     newName: ghcr.io/opalwight/the-ranch/api # {"$imagepolicy": "flux-system:filesync-api:name"}
     newTag: latest # {"$imagepolicy": "flux-system:filesync-api:tag"}
   - name: the-ranch-worker
     newName: ghcr.io/opalwight/the-ranch/worker # {"$imagepolicy": "flux-system:filesync-worker:name"}
-    newTag: latest # {"$imagepolicy": "flux-system:filesync-worker:tag"}
+    newTag: f80bc756fda69cb29b02c21b751fcf74d63a3217 # {"$imagepolicy": "flux-system:filesync-worker:tag"}
   - name: the-ranch-web
     newName: ghcr.io/opalwight/the-ranch/web # {"$imagepolicy": "flux-system:filesync-web:name"}
     newTag: latest # {"$imagepolicy": "flux-system:filesync-web:tag"}
