@@ -5,7 +5,7 @@ metadata:
   namespace: default
 data:
   SERVER_PORT: "8080"
-  MINIO_ENDPOINT: "minio.storage.svc.cluster.local:9000"
+  MINIO_ENDPOINT: "storage-minio.storage.svc.cluster.local:9000"
   MINIO_BUCKET: "filesync"
   MINIO_USE_SSL: "false"
 ---

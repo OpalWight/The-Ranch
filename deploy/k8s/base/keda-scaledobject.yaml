@@ -27,7 +27,7 @@ spec:
   triggers:
     - type: redis-streams
       metadata:
-        address: redis-master.cache.svc.cluster.local:6379
+        address: cache-redis-master.cache.svc.cluster.local:6379
         stream: filesync:tasks
         consumerGroup: filesync-workers
         lagCount: "10"
