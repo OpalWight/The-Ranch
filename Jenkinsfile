@@ -101,9 +101,6 @@ pipeline {
         // ───────────────────── CD ─────────────────────
 
         stage('Deploy App') {
-            when {
-                branch 'main'
-            }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh """
@@ -130,9 +127,6 @@ pipeline {
         }
 
         stage('Deploy Infrastructure (Helm)') {
-            when {
-                branch 'main'
-            }
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
