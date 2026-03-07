@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS files (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_files_name ON files(name);
-CREATE INDEX idx_files_created_at ON files(created_at);
+CREATE INDEX IF NOT EXISTS idx_files_name ON files(name);
+CREATE INDEX IF NOT EXISTS idx_files_created_at ON files(created_at);

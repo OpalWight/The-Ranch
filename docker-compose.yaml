@@ -34,8 +34,8 @@ services:
     build:
       context: ./jenkins
       dockerfile: Dockerfile
-      args:
-        DOCKER_GID: "${DOCKER_GID:-999}"
+    group_add:
+      - "${DOCKER_GID}"
     network_mode: host  # Access k3s API at 127.0.0.1:6443 directly
     volumes:
       - jenkins_home:/var/jenkins_home

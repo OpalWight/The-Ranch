@@ -1,5 +1,5 @@
-ALTER TABLE files ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
-ALTER TABLE files ADD COLUMN thumbnail_key TEXT;
-ALTER TABLE files ADD COLUMN processed_at TIMESTAMPTZ;
+ALTER TABLE files ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE files ADD COLUMN IF NOT EXISTS thumbnail_key TEXT;
+ALTER TABLE files ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ;
 
-CREATE INDEX idx_files_status ON files(status);
+CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);

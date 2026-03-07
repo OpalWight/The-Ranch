@@ -19,13 +19,17 @@ RUN curl -fsSL "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release
       -o /usr/local/bin/kubectl && \
     chmod +x /usr/local/bin/kubectl
 
-# Install Go (for running tests)
+# Install Go (for running tests) and gcc (required for -race detector / cgo)
 ARG GO_VERSION=1.25.6
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc libc6-dev && \
+    rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-$(dpkg --print-architecture).tar.gz" \
       -o /tmp/go.tar.gz && \
     tar -C /usr/local -xzf /tmp/go.tar.gz && \
     rm /tmp/go.tar.gz
 ENV PATH="/usr/local/go/bin:${PATH}"
+ENV CGO_ENABLED=1
 
 # Install kustomize
 RUN curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && \
@@ -33,12 +37,6 @@ RUN curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/mast
 
 # Install Helm
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-# Give jenkins user access to the Docker socket
-# The host's docker group GID is passed at build time; default 999
-ARG DOCKER_GID=999
-RUN groupadd -g ${DOCKER_GID} hostdocker || true && \
-    usermod -aG ${DOCKER_GID} jenkins
 
 # Install plugins from plugins.txt
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt

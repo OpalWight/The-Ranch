@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS directories (
     UNIQUE (parent_id, name)
 );
 
-CREATE INDEX idx_directories_parent_id ON directories(parent_id);
+CREATE INDEX IF NOT EXISTS idx_directories_parent_id ON directories(parent_id);
 
-ALTER TABLE files ADD COLUMN directory_id UUID REFERENCES directories(id);
-CREATE INDEX idx_files_directory_id ON files(directory_id);
+ALTER TABLE files ADD COLUMN IF NOT EXISTS directory_id UUID REFERENCES directories(id);
+CREATE INDEX IF NOT EXISTS idx_files_directory_id ON files(directory_id);
