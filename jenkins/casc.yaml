@@ -24,6 +24,9 @@ jenkins:
 unclassified:
   location:
     url: "${JENKINS_URL:-http://localhost:8081/}"
+  gitHubPluginConfig:
+    hookSecretConfig:
+      credentialsId: "github-webhook-secret"
   ansiColorBuildWrapper:
     globalColorMapName: "xterm"
 
@@ -43,6 +46,11 @@ credentials:
               description: "k3s cluster kubeconfig"
               fileName: "kubeconfig"
               secretBytes: "${KUBECONFIG_BASE64}"
+          - string:
+              scope: GLOBAL
+              id: "github-webhook-secret"
+              description: "GitHub webhook HMAC secret"
+              secret: "${GITHUB_WEBHOOK_SECRET}"
 
 jobs:
   - script: |
@@ -63,6 +71,6 @@ jobs:
           }
         }
         triggers {
-          scm('H/2 * * * *')
+          githubPush()
         }
       }

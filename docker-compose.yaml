@@ -51,6 +51,7 @@ services:
       GHCR_TOKEN: "${GHCR_TOKEN}"
       KUBECONFIG_BASE64: "${KUBECONFIG_BASE64}"
       REPO_URL: "${REPO_URL:-https://github.com/OpalWight/The-Ranch.git}"
+      GITHUB_WEBHOOK_SECRET: "${GITHUB_WEBHOOK_SECRET}"
     deploy:
       resources:
         limits:
