@@ -5,6 +5,7 @@ metadata:
   namespace: default
   annotations:
     tailscale.com/hostname: "filesync"
+    tailscale.com/proxy-class: "head-node"
 spec:
   ingressClassName: tailscale
   rules:

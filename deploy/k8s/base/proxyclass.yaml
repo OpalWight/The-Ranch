@@ -1,0 +1,9 @@
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: head-node
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
