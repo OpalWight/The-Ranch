@@ -16,6 +16,7 @@ plain-credentials
 
 # Configuration as Code
 configuration-as-code
+job-dsl
 
 # UI / Quality of Life
 blueocean
