@@ -24,8 +24,6 @@ spec:
       existingSecret: redis-credentials
       existingSecretPasswordKey: redis-password
     master:
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
       resources:
         requests:
           cpu: 50m

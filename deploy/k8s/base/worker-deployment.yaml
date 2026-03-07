@@ -18,8 +18,6 @@ spec:
         app: filesync
         component: worker
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
       imagePullSecrets:
       - name: ghcr-auth
       containers:

@@ -17,8 +17,6 @@ spec:
         app: filesync
         component: api
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
       initContainers:
         - name: migrate
           image: migrate/migrate:latest

@@ -15,8 +15,6 @@ spec:
         app: filesync
         component: web
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
       containers:
         - name: web
           image: the-ranch-web:latest

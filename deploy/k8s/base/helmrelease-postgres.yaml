@@ -26,8 +26,6 @@ spec:
         adminPasswordKey: postgres-password
         userPasswordKey: password
     primary:
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
       resources:
         requests:
           cpu: 100m

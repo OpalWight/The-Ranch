@@ -23,7 +23,6 @@ resources:
   - sealed-secret-redis-helm.yaml
   - sealed-secret-minio-helm.yaml
   - image-automation.yaml
-  - proxyclass.yaml
   - ingress.yaml
   - worker-deployment.yaml
   - hpa-api.yaml
