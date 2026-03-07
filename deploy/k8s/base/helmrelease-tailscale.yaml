@@ -24,3 +24,5 @@ spec:
     operatorConfig:
       defaultTags:
         - "tag:k8s-operator"
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
