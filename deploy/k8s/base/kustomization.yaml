@@ -6,12 +6,16 @@ resources:
   - helmrelease-postgres.yaml
   - helmrelease-redis.yaml
   - helmrelease-minio.yaml
+  - helmrelease-tailscale.yaml
   - deployment.yaml
   - service.yaml
+  - web-deployment.yaml
+  - web-service.yaml
   - configmap.yaml
   - sealed-secret-db.yaml
   - sealed-secret-minio.yaml
   - sealed-secret-redis.yaml
+  - sealed-secret-tailscale.yaml
   - ingress.yaml
   - worker-deployment.yaml
   - hpa-api.yaml
