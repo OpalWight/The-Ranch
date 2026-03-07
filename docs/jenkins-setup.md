@@ -9,6 +9,24 @@ GitHub Actions + FluxCD setup.
 - **CI**: Jenkins tests Go code, builds Docker images (api, worker, web), pushes to GHCR
 - **CD**: Jenkins deploys to k3s via `kustomize` + `kubectl`, and manages Helm releases for infrastructure
 
+## Head Node Dependencies
+
+The following must be installed on the `head` node before running Jenkins:
+
+| Dependency       | Purpose                          | Install                                                  |
+|------------------|----------------------------------|----------------------------------------------------------|
+| **Docker Engine** | Runs Jenkins + builds images    | `curl -fsSL https://get.docker.com \| sudo sh`          |
+| **Docker Compose** | (included with Docker Engine)  | Comes as `docker compose` plugin                         |
+| **k3s**          | Kubernetes cluster               | Already installed on the cluster                         |
+| **git**          | Clone repo on head node          | `sudo apt install -y git`                                |
+| **make**         | Run Makefile targets             | `sudo apt install -y make`                               |
+
+After installing Docker, add your user to the docker group:
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
 ## Prerequisites
 
 Before starting Jenkins, prepare the following:
