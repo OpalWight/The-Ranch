@@ -10,6 +10,7 @@ type File struct {
 	MimeType     string     `json:"mime_type"`
 	Checksum     string     `json:"checksum"`
 	StorageKey   *string    `json:"storage_key,omitempty"`
+	DirectoryID  *string    `json:"directory_id,omitempty"`
 	Status       string     `json:"status"`
 	ThumbnailKey *string    `json:"thumbnail_key,omitempty"`
 	ProcessedAt  *time.Time `json:"processed_at,omitempty"`
@@ -19,9 +20,10 @@ type File struct {
 
 // CreateFileRequest defines the payload for creating a new file record.
 type CreateFileRequest struct {
-	Name       string  `json:"name"`
-	SizeBytes  int64   `json:"size_bytes"`
-	MimeType   string  `json:"mime_type"`
-	Checksum   string  `json:"checksum"`
-	StorageKey *string `json:"storage_key,omitempty"`
+	Name        string  `json:"name"`
+	SizeBytes   int64   `json:"size_bytes"`
+	MimeType    string  `json:"mime_type"`
+	Checksum    string  `json:"checksum"`
+	StorageKey  *string `json:"storage_key,omitempty"`
+	DirectoryID *string `json:"directory_id,omitempty"`
 }

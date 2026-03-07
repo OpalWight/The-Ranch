@@ -125,12 +125,19 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
 
+	directoryID := r.FormValue("directory_id")
+	var dirPtr *string
+	if directoryID != "" {
+		dirPtr = &directoryID
+	}
+
 	req := model.CreateFileRequest{
-		Name:       header.Filename,
-		SizeBytes:  header.Size,
-		MimeType:   contentType,
-		Checksum:   checksum,
-		StorageKey: &storageKey,
+		Name:        header.Filename,
+		SizeBytes:   header.Size,
+		MimeType:    contentType,
+		Checksum:    checksum,
+		StorageKey:  &storageKey,
+		DirectoryID: dirPtr,
 	}
 
 	record, err := h.repo.Create(r.Context(), req)
@@ -191,7 +198,19 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
-	files, err := h.repo.List(r.Context())
+	directoryID := r.URL.Query().Get("directory_id")
+
+	var files []model.File
+	var err error
+	if directoryID != "" {
+		files, err = h.repo.ListByDirectory(r.Context(), &directoryID)
+	} else if r.URL.Query().Has("directory_id") {
+		// Explicit ?directory_id= (empty) means root
+		files, err = h.repo.ListByDirectory(r.Context(), nil)
+	} else {
+		// No param = list all files
+		files, err = h.repo.List(r.Context())
+	}
 	if err != nil {
 		h.logger.Error("listing files", "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})

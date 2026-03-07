@@ -32,14 +32,14 @@ func ConnectPostgres(databaseURL string) (*sql.DB, error) {
 	return db, nil
 }
 
-const fileCols = `id, name, size_bytes, mime_type, checksum, storage_key, status, thumbnail_key, processed_at, created_at, updated_at`
+const fileCols = `id, name, size_bytes, mime_type, checksum, storage_key, directory_id, status, thumbnail_key, processed_at, created_at, updated_at`
 
 // scanFile is a helper to scan a database row into a File model.
 func scanFile(scanner interface{ Scan(...any) error }) (*model.File, error) {
 	var f model.File
 	err := scanner.Scan(
 		&f.ID, &f.Name, &f.SizeBytes, &f.MimeType, &f.Checksum,
-		&f.StorageKey, &f.Status, &f.ThumbnailKey, &f.ProcessedAt,
+		&f.StorageKey, &f.DirectoryID, &f.Status, &f.ThumbnailKey, &f.ProcessedAt,
 		&f.CreatedAt, &f.UpdatedAt,
 	)
 	return &f, err
@@ -48,10 +48,10 @@ func scanFile(scanner interface{ Scan(...any) error }) (*model.File, error) {
 // Create inserts a new file record into the database.
 func (r *FileRepository) Create(ctx context.Context, req model.CreateFileRequest) (*model.File, error) {
 	row := r.db.QueryRowContext(ctx,
-		`INSERT INTO files (name, size_bytes, mime_type, checksum, storage_key)
-		 VALUES ($1, $2, $3, $4, $5)
+		`INSERT INTO files (name, size_bytes, mime_type, checksum, storage_key, directory_id)
+		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING `+fileCols,
-		req.Name, req.SizeBytes, req.MimeType, req.Checksum, req.StorageKey,
+		req.Name, req.SizeBytes, req.MimeType, req.Checksum, req.StorageKey, req.DirectoryID,
 	)
 	f, err := scanFile(row)
 	if err != nil {
@@ -133,6 +133,33 @@ func (r *FileRepository) MarkProcessed(ctx context.Context, id string) error {
 		return fmt.Errorf("marking processed: %w", err)
 	}
 	return nil
+}
+
+// ListByDirectory lists files in a given directory (NULL = root).
+func (r *FileRepository) ListByDirectory(ctx context.Context, directoryID *string) ([]model.File, error) {
+	var rows *sql.Rows
+	var err error
+	if directoryID == nil {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT `+fileCols+` FROM files WHERE directory_id IS NULL ORDER BY created_at DESC`)
+	} else {
+		rows, err = r.db.QueryContext(ctx,
+			`SELECT `+fileCols+` FROM files WHERE directory_id = $1 ORDER BY created_at DESC`, *directoryID)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("listing files by directory: %w", err)
+	}
+	defer rows.Close()
+
+	var files []model.File
+	for rows.Next() {
+		f, err := scanFile(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scanning file: %w", err)
+		}
+		files = append(files, *f)
+	}
+	return files, rows.Err()
 }
 
 // ListStorageKeys retrieves all unique storage keys currently in use.

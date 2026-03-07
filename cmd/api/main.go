@@ -83,8 +83,10 @@ func main() {
 	}
 
 	fileRepo := repository.NewFileRepository(db)
+	dirRepo := repository.NewDirectoryRepository(db)
 	healthHandler := handler.NewHealthHandler(db)
 	fileHandler := handler.NewFileHandler(fileRepo, store, logger)
+	dirHandler := handler.NewDirectoryHandler(dirRepo, fileRepo, logger)
 	if ps != nil {
 		fileHandler.SetPublisher(ps)
 	}
@@ -107,6 +109,14 @@ func main() {
 	// File upload/download (binary)
 	mux.HandleFunc("POST /api/v1/files/upload", fileHandler.Upload)
 	mux.HandleFunc("GET /api/v1/files/{id}/download", fileHandler.Download)
+
+	// Directory CRUD
+	mux.HandleFunc("POST /api/v1/directories", dirHandler.Create)
+	mux.HandleFunc("GET /api/v1/directories", dirHandler.List)
+	mux.HandleFunc("GET /api/v1/directories/{id}", dirHandler.GetByID)
+	mux.HandleFunc("GET /api/v1/directories/{id}/contents", dirHandler.Contents)
+	mux.HandleFunc("PATCH /api/v1/directories/{id}", dirHandler.Update)
+	mux.HandleFunc("DELETE /api/v1/directories/{id}", dirHandler.Delete)
 
 	// SSE real-time events
 	if ps != nil {
