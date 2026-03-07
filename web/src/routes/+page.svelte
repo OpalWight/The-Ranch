@@ -35,7 +35,7 @@
 
   // Upload
   let uploading = $state(false);
-  let activeUploads = $state<{ name: string; percent: number }[]>([]);
+  let uploadStats = $state({ completed: 0, total: 0, currentName: '', percent: 0 });
   let dragOver = $state(false);
 
   // Storage stats
@@ -177,28 +177,24 @@
     error = null;
     
     const filesArray = Array.from(fileList);
-    const uploadPromises = filesArray.map(async (file) => {
-      const uploadItem = { name: file.name, percent: 0 };
-      activeUploads = [...activeUploads, uploadItem];
+    uploadStats = { completed: 0, total: filesArray.length, currentName: '', percent: 0 };
 
+    for (const file of filesArray) {
+      uploadStats.currentName = file.name;
+      uploadStats.percent = 0;
       try {
         await uploadFile(file, currentDirId ?? undefined, (p) => {
-          uploadItem.percent = p;
-          activeUploads = [...activeUploads]; // trigger reactivity
+          uploadStats.percent = p;
         });
-      } finally {
-        activeUploads = activeUploads.filter(u => u !== uploadItem);
+        uploadStats.completed++;
+      } catch (e: any) {
+        error = e.message;
+        break;
       }
-    });
-
-    try {
-      await Promise.all(uploadPromises);
-      await loadContents();
-    } catch (e: any) {
-      error = e.message;
-    } finally {
-      uploading = false;
     }
+
+    uploading = false;
+    await loadContents();
   }
 
   async function handleDelete() {
@@ -336,28 +332,30 @@
 >
   {#if loading}
     <p class="empty">Loading...</p>
-  {:else if directories.length === 0 && files.length === 0 && activeUploads.length === 0}
+  {:else if directories.length === 0 && files.length === 0 && !uploading}
     <p class="empty">Empty directory. Drop files or use the toolbar.</p>
   {:else}
     <div class="list">
       <!-- Active Uploads -->
-      {#each activeUploads as upload}
+      {#if uploading}
         <div class="list-row uploading">
           <span class="col-select"></span>
           <div class="row-main">
             <span class="icon">up</span>
             <div class="upload-info">
-              <span class="row-name">{upload.name}</span>
+              <span class="row-name">
+                Uploading: {uploadStats.currentName} ({uploadStats.completed + 1}/{uploadStats.total})
+              </span>
               <div class="progress-container">
-                <div class="progress-bar" style="width: {upload.percent}%"></div>
+                <div class="progress-bar" style="width: {uploadStats.percent}%"></div>
               </div>
             </div>
           </div>
-          <span class="col-size">{upload.percent}%</span>
+          <span class="col-size">{uploadStats.percent}%</span>
           <span class="col-date"></span>
           <span class="col-action"></span>
         </div>
-      {/each}
+      {/if}
 
       <!-- Column header -->
       <div class="list-header">

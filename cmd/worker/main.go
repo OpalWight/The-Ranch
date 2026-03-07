@@ -175,7 +175,7 @@ func processTask(ctx context.Context, logger *slog.Logger, repo *repository.File
 	case queue.TaskProcessUpload:
 		return handleProcessUpload(ctx, logger, repo, store, pub, producer, task)
 	case queue.TaskGenerateThumbnail:
-		return handleGenerateThumbnail(ctx, logger, repo, store, task)
+		return handleGenerateThumbnail(ctx, logger, repo, store, pub, task)
 	case queue.TaskCleanupOrphans:
 		return handleCleanupOrphans(ctx, logger, repo, store)
 	default:
@@ -252,7 +252,7 @@ func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *reposit
 }
 
 // handleGenerateThumbnail creates a resized preview for supported image formats.
-func handleGenerateThumbnail(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, task queue.Task) error {
+func handleGenerateThumbnail(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, task queue.Task) error {
 	fileID := task.Payload["file_id"]
 	storageKey := task.Payload["storage_key"]
 
@@ -303,6 +303,22 @@ func handleGenerateThumbnail(ctx context.Context, logger *slog.Logger, repo *rep
 
 	if err := repo.SetThumbnailKey(ctx, fileID, thumbnailKey); err != nil {
 		return fmt.Errorf("setting thumbnail key: %w", err)
+	}
+
+	// Publish event
+	file, _ := repo.GetByID(ctx, fileID)
+	name := fileID
+	if file != nil {
+		name = file.Name
+	}
+	evt, _ := json.Marshal(map[string]string{
+		"event":     "thumbnail_generated",
+		"file_id":   fileID,
+		"name":      name,
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	})
+	if err := pub.Publish(ctx, "filesync:events", string(evt)); err != nil {
+		logger.Error("publishing thumbnail_generated event", "error", err)
 	}
 
 	logger.Info("thumbnail generated", "file_id", fileID, "thumbnail_key", thumbnailKey)
