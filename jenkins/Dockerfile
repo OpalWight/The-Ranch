@@ -34,6 +34,12 @@ RUN curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/mast
 # Install Helm
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# Give jenkins user access to the Docker socket
+# The host's docker group GID is passed at build time; default 999
+ARG DOCKER_GID=999
+RUN groupadd -g ${DOCKER_GID} hostdocker || true && \
+    usermod -aG ${DOCKER_GID} jenkins
+
 # Install plugins from plugins.txt
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
