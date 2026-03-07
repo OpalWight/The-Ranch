@@ -43,5 +43,9 @@ spec:
         policy: none
         purge: false
 
+    postJob:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+
     consoleIngress:
       enabled: false

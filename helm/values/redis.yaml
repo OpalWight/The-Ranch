@@ -2,7 +2,8 @@ architecture: standalone
 
 auth:
   enabled: true
-  password: "changeme-use-sealed-secrets-later"
+  # Password managed via sealed secret (sealed-secret-redis-credentials)
+  existingSecret: "filesync-redis-credentials"
 
 master:
   resources:

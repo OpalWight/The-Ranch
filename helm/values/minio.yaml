@@ -13,8 +13,8 @@ persistence:
   size: 20Gi
   storageClass: "local-path"
 
-rootUser: minioadmin
-rootPassword: "changeme-minio-secret"
+# Credentials managed via existingSecret (sealed-secret-minio-credentials)
+# rootUser / rootPassword intentionally omitted
 
 buckets:
   - name: filesync
