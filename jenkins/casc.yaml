@@ -17,6 +17,10 @@ jenkins:
   remotingSecurity:
     enabled: true
 
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+
 unclassified:
   location:
     url: "${JENKINS_URL:-http://localhost:8081/}"
