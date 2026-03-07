@@ -2,6 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
   name: filesync-redis-trigger-auth
+  namespace: default
 spec:
   secretTargetRef:
     - parameter: password
@@ -12,6 +13,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: filesync-worker
+  namespace: default
   labels:
     app: filesync
     component: worker

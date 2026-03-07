@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: filesync-config
+  namespace: default
 data:
   SERVER_PORT: "8080"
   MINIO_ENDPOINT: "minio.storage.svc.cluster.local:9000"
@@ -12,6 +13,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: filesync-migrations
+  namespace: default
 data:
   001_create_files.up.sql: |
     CREATE TABLE IF NOT EXISTS files (

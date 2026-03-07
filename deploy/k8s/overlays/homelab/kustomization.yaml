@@ -4,8 +4,6 @@ kind: Kustomization
 resources:
   - ../../base
 
-namespace: default
-
 images:
   - name: the-ranch
     newName: ghcr.io/opalwight/the-ranch/api # {"$imagepolicy": "flux-system:filesync-api:name"}

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: filesync-worker
+  namespace: default
   labels:
     app: filesync
     component: worker

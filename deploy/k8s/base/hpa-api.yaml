@@ -2,6 +2,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: filesync-api
+  namespace: default
   labels:
     app: filesync
     component: api
