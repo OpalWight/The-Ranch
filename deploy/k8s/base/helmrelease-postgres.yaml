@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: postgres
@@ -21,8 +21,10 @@ spec:
     auth:
       database: filesync
       username: filesync
-      existingSecret: ""
-      password: "changeme-use-sealed-secrets-later"
+      existingSecret: postgres-credentials
+      secretKeys:
+        adminPasswordKey: postgres-password
+        userPasswordKey: password
     primary:
       resources:
         requests:

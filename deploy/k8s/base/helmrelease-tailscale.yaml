@@ -11,11 +11,16 @@ spec:
   chart:
     spec:
       chart: tailscale-operator
+      version: ">=1.76.0"
       sourceRef:
         kind: HelmRepository
         name: tailscale
         namespace: flux-system
+      interval: 1h
   values:
-    oauth:
-      clientId: "${TAILSCALE_CLIENT_ID}"
-      clientSecret: "${TAILSCALE_CLIENT_SECRET}"
+    oauthSecretVolume:
+      secret:
+        secretName: tailscale-operator-oauth
+    operatorConfig:
+      defaultTags:
+        - "tag:k8s-operator"

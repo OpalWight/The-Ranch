@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: redis
@@ -21,7 +21,8 @@ spec:
     architecture: standalone
     auth:
       enabled: true
-      password: "changeme-use-sealed-secrets-later"
+      existingSecret: redis-credentials
+      existingSecretPasswordKey: redis-password
     master:
       resources:
         requests:

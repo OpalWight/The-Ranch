@@ -2,7 +2,7 @@ APP_NAME := the-ranch
 GO := go
 DOCKER := docker
 
-GHCR_REPO := ghcr.io/albertvo/homelab
+GHCR_REPO := ghcr.io/opalwight/the-ranch
 
 .PHONY: build run run-worker test lint clean docker-build docker-push deploy infra-up infra-down migrate
 
@@ -59,5 +59,7 @@ infra-down: ## Stop Postgres + MinIO + Redis
 	$(DOCKER) compose down
 
 migrate: ## Run SQL migrations against local Postgres
-	$(DOCKER) exec -i homelab-postgres-1 psql -U filesync -d filesync < migrations/001_create_files.up.sql
-	$(DOCKER) exec -i homelab-postgres-1 psql -U filesync -d filesync < migrations/002_add_file_status.up.sql
+	@for f in migrations/*.up.sql; do \
+		echo "Running $$f..."; \
+		$(DOCKER) exec -i homelab-postgres-1 psql -U filesync -d filesync < "$$f"; \
+	done

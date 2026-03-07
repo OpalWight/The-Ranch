@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/albertvo/homelab/web:latest
+          image: the-ranch-web:latest
           ports:
             - containerPort: 80
               name: http

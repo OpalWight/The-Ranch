@@ -16,6 +16,12 @@ resources:
   - sealed-secret-minio.yaml
   - sealed-secret-redis.yaml
   - sealed-secret-tailscale.yaml
+  - sealed-secret-ghcr.yaml
+  - sealed-secret-ghcr-flux.yaml
+  - sealed-secret-postgres-helm.yaml
+  - sealed-secret-redis-helm.yaml
+  - sealed-secret-minio-helm.yaml
+  - image-automation.yaml
   - ingress.yaml
   - worker-deployment.yaml
   - hpa-api.yaml

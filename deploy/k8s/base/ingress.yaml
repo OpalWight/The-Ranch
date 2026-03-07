@@ -3,19 +3,11 @@ kind: Ingress
 metadata:
   name: filesync-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    tailscale.com/expose: "true"
     tailscale.com/hostname: "filesync"
 spec:
   ingressClassName: tailscale
-  tls:
-    - hosts:
-        - filesync.homelab.local
-      secretName: filesync-tls
   rules:
-    - host: filesync.homelab.local
-      http:
+    - http:
         paths:
           - path: /api
             pathType: Prefix
