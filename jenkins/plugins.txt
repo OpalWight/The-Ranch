@@ -1,0 +1,24 @@
+# Pipeline
+workflow-aggregator
+pipeline-stage-view
+
+# Git
+git
+github
+
+# Docker
+docker-workflow
+docker-commons
+
+# Credentials
+credentials-binding
+plain-credentials
+
+# Configuration as Code
+configuration-as-code
+
+# UI / Quality of Life
+blueocean
+timestamper
+ansicolor
+ws-cleanup

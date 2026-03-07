@@ -30,7 +30,33 @@ services:
     volumes:
       - redisdata:/data
 
+  jenkins:
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    network_mode: host  # Access k3s API at 127.0.0.1:6443 directly
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins/casc.yaml:/var/jenkins_casc/casc.yaml:ro
+    environment:
+      JAVA_OPTS: "-Xmx1g"
+      CASC_JENKINS_CONFIG: /var/jenkins_casc/casc.yaml
+      JENKINS_ADMIN_USER: "${JENKINS_ADMIN_USER:-admin}"
+      JENKINS_ADMIN_PASSWORD: "${JENKINS_ADMIN_PASSWORD:-changeme}"
+      JENKINS_URL: "${JENKINS_URL:-http://localhost:8080/}"
+      GHCR_USERNAME: "${GHCR_USERNAME}"
+      GHCR_TOKEN: "${GHCR_TOKEN}"
+      KUBECONFIG_BASE64: "${KUBECONFIG_BASE64}"
+      REPO_URL: "${REPO_URL:-https://github.com/OpalWight/The-Ranch.git}"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    restart: unless-stopped
+
 volumes:
   pgdata:
   miniodata:
   redisdata:
+  jenkins_home:

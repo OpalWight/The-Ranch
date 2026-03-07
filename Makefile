@@ -4,7 +4,7 @@ DOCKER := docker
 
 GHCR_REPO := ghcr.io/opalwight/the-ranch
 
-.PHONY: build run run-worker test lint clean docker-build docker-push deploy infra-up infra-down migrate
+.PHONY: build run run-worker test lint clean docker-build docker-push deploy infra-up infra-down migrate jenkins-build jenkins-up jenkins-down jenkins-logs
 
 build:
 	$(GO) build -o bin/api ./cmd/api
@@ -63,3 +63,15 @@ migrate: ## Run SQL migrations against local Postgres
 		echo "Running $$f..."; \
 		$(DOCKER) exec -i homelab-postgres-1 psql -U filesync -d filesync < "$$f"; \
 	done
+
+jenkins-build: ## Build the custom Jenkins image
+	$(DOCKER) compose build jenkins
+
+jenkins-up: ## Start Jenkins (and infrastructure if not running)
+	$(DOCKER) compose up -d jenkins
+
+jenkins-down: ## Stop Jenkins
+	$(DOCKER) compose stop jenkins
+
+jenkins-logs: ## Tail Jenkins logs
+	$(DOCKER) compose logs -f jenkins

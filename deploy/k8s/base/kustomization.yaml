@@ -3,11 +3,6 @@ kind: Kustomization
 
 resources:
   - namespaces.yaml
-  - helmrepository.yaml
-  - helmrelease-postgres.yaml
-  - helmrelease-redis.yaml
-  - helmrelease-minio.yaml
-  - helmrelease-tailscale.yaml
   - deployment.yaml
   - service.yaml
   - web-deployment.yaml
@@ -18,11 +13,9 @@ resources:
   - sealed-secret-redis.yaml
   - sealed-secret-tailscale.yaml
   - sealed-secret-ghcr.yaml
-  - sealed-secret-ghcr-flux.yaml
   - sealed-secret-postgres-helm.yaml
   - sealed-secret-redis-helm.yaml
   - sealed-secret-minio-helm.yaml
-  - image-automation.yaml
   - ingress.yaml
   - worker-deployment.yaml
   - hpa-api.yaml

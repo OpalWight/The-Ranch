@@ -1,0 +1,64 @@
+jenkins:
+  systemMessage: "The Ranch - Homelab Jenkins CI/CD"
+  numExecutors: 2
+  mode: NORMAL
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  remotingSecurity:
+    enabled: true
+
+unclassified:
+  location:
+    url: "${JENKINS_URL:-http://localhost:8081/}"
+  ansiColorBuildWrapper:
+    globalColorMapName: "xterm"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "ghcr-credentials"
+              description: "GitHub Container Registry"
+              username: "${GHCR_USERNAME}"
+              password: "${GHCR_TOKEN}"
+          - file:
+              scope: GLOBAL
+              id: "kubeconfig"
+              description: "k3s cluster kubeconfig"
+              fileName: "kubeconfig"
+              secretBytes: "${KUBECONFIG_BASE64}"
+
+jobs:
+  - script: |
+      pipelineJob('the-ranch') {
+        description('CI/CD pipeline for The Ranch file sync service')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('${REPO_URL:-https://github.com/OpalWight/The-Ranch.git}')
+                  credentials('ghcr-credentials')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+        triggers {
+          scm('H/2 * * * *')
+        }
+      }

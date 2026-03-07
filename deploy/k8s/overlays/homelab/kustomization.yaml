@@ -4,11 +4,11 @@ resources:
   - ../../base
 images:
   - name: the-ranch
-    newName: ghcr.io/opalwight/the-ranch/api # {"$imagepolicy": "flux-system:filesync-api:name"}
-    newTag: f80bc756fda69cb29b02c21b751fcf74d63a3217 # {"$imagepolicy": "flux-system:filesync-api:tag"}
+    newName: ghcr.io/opalwight/the-ranch/api
+    newTag: latest
   - name: the-ranch-worker
-    newName: ghcr.io/opalwight/the-ranch/worker # {"$imagepolicy": "flux-system:filesync-worker:name"}
-    newTag: f80bc756fda69cb29b02c21b751fcf74d63a3217 # {"$imagepolicy": "flux-system:filesync-worker:tag"}
+    newName: ghcr.io/opalwight/the-ranch/worker
+    newTag: latest
   - name: the-ranch-web
-    newName: ghcr.io/opalwight/the-ranch/web # {"$imagepolicy": "flux-system:filesync-web:name"}
-    newTag: f80bc756fda69cb29b02c21b751fcf74d63a3217 # {"$imagepolicy": "flux-system:filesync-web:tag"}
+    newName: ghcr.io/opalwight/the-ranch/web
+    newTag: latest
