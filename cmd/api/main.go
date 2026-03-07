@@ -87,6 +87,7 @@ func main() {
 	healthHandler := handler.NewHealthHandler(db)
 	fileHandler := handler.NewFileHandler(fileRepo, store, logger)
 	dirHandler := handler.NewDirectoryHandler(dirRepo, fileRepo, logger)
+	storageHandler := handler.NewStorageHandler(fileRepo, logger)
 	if ps != nil {
 		fileHandler.SetPublisher(ps)
 	}
@@ -117,6 +118,9 @@ func main() {
 	mux.HandleFunc("GET /api/v1/directories/{id}/contents", dirHandler.Contents)
 	mux.HandleFunc("PATCH /api/v1/directories/{id}", dirHandler.Update)
 	mux.HandleFunc("DELETE /api/v1/directories/{id}", dirHandler.Delete)
+
+	// Storage stats
+	mux.HandleFunc("GET /api/v1/storage/stats", storageHandler.Stats)
 
 	// SSE real-time events
 	if ps != nil {

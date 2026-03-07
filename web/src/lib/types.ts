@@ -28,6 +28,11 @@ export interface DirectoryContents {
   breadcrumb: Directory[];
 }
 
+export interface StorageStats {
+  file_count: number;
+  total_bytes: number;
+}
+
 export interface FileEvent {
   event: string;
   file_id: string;

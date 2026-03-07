@@ -1,4 +1,4 @@
-import type { FileRecord, Directory, DirectoryContents } from './types';
+import type { FileRecord, Directory, DirectoryContents, StorageStats } from './types';
 
 const BASE = '/api/v1';
 
@@ -63,3 +63,8 @@ export const updateDirectory = (id: string, data: { name?: string; parent_id?: s
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+
+// Storage
+
+export const getStorageStats = (): Promise<StorageStats> =>
+  request<StorageStats>('/storage/stats');

@@ -9,10 +9,11 @@
     uploadFile,
     deleteFile,
     downloadUrl,
+    getStorageStats,
   } from '$lib/api';
   import { connectSSE } from '$lib/sse';
   import { formatBytes, formatDate, fileIcon } from '$lib/utils';
-  import type { FileRecord, Directory, FileEvent } from '$lib/types';
+  import type { FileRecord, Directory, FileEvent, StorageStats } from '$lib/types';
 
   // State
   let currentDirId: string | null = $state(null);
@@ -32,10 +33,21 @@
   let uploading = $state(false);
   let dragOver = $state(false);
 
+  // Storage stats
+  let storageStats: StorageStats | null = $state(null);
+
   // Delete confirm
   let confirmDelete: { type: 'file' | 'dir'; id: string; name: string } | null = $state(null);
 
   let sse: EventSource | null = null;
+
+  async function loadStorageStats() {
+    try {
+      storageStats = await getStorageStats();
+    } catch {
+      // non-critical, silently ignore
+    }
+  }
 
   async function loadContents() {
     loading = true;
@@ -60,6 +72,7 @@
     } finally {
       loading = false;
     }
+    loadStorageStats();
   }
 
   function navigateTo(dirId: string | null) {
@@ -164,19 +177,28 @@
 
 <!-- Toolbar -->
 <div class="toolbar">
-  <button class="btn btn-primary" onclick={() => (showNewFolder = !showNewFolder)}>
-    New Folder
-  </button>
-  <label class="btn btn-primary upload-btn">
-    {uploading ? 'Uploading...' : 'Upload Files'}
-    <input
-      type="file"
-      multiple
-      hidden
-      disabled={uploading}
-      onchange={(e) => handleUpload(e.currentTarget.files)}
-    />
-  </label>
+  <div class="toolbar-actions">
+    <button class="btn btn-primary" onclick={() => (showNewFolder = !showNewFolder)}>
+      New Folder
+    </button>
+    <label class="btn btn-primary upload-btn">
+      {uploading ? 'Uploading...' : 'Upload Files'}
+      <input
+        type="file"
+        multiple
+        hidden
+        disabled={uploading}
+        onchange={(e) => handleUpload(e.currentTarget.files)}
+      />
+    </label>
+  </div>
+  {#if storageStats}
+    <div class="storage-stats">
+      <span class="storage-label">{storageStats.file_count} files</span>
+      <span class="storage-dot">&middot;</span>
+      <span class="storage-used">{formatBytes(storageStats.total_bytes)}</span>
+    </div>
+  {/if}
 </div>
 
 <!-- New folder inline input -->
@@ -331,9 +353,16 @@
   /* Toolbar */
   .toolbar {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
+  }
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
   /* Buttons */
@@ -367,6 +396,24 @@
   }
   .upload-btn {
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Storage stats */
+  .storage-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+  .storage-dot {
+    color: var(--color-border);
+  }
+  .storage-used {
+    color: var(--color-primary);
   }
 
   /* New folder */

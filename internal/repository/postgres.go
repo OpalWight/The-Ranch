@@ -162,6 +162,17 @@ func (r *FileRepository) ListByDirectory(ctx context.Context, directoryID *strin
 	return files, rows.Err()
 }
 
+// StorageStats returns the total number of files and total bytes used.
+func (r *FileRepository) StorageStats(ctx context.Context) (fileCount int64, totalBytes int64, err error) {
+	err = r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*), COALESCE(SUM(size_bytes), 0) FROM files`,
+	).Scan(&fileCount, &totalBytes)
+	if err != nil {
+		return 0, 0, fmt.Errorf("querying storage stats: %w", err)
+	}
+	return fileCount, totalBytes, nil
+}
+
 // ListStorageKeys retrieves all unique storage keys currently in use.
 func (r *FileRepository) ListStorageKeys(ctx context.Context) ([]string, error) {
 	rows, err := r.db.QueryContext(ctx,
