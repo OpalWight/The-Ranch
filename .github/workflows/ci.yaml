@@ -10,6 +10,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -56,6 +59,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Lowercase image name
+        run: echo "IMAGE_BASE=${{ env.REGISTRY }}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -73,8 +79,8 @@ jobs:
           target: api
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/api:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/api:latest
+            ${{ env.IMAGE_BASE }}/api:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -85,8 +91,8 @@ jobs:
           target: worker
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/worker:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/worker:latest
+            ${{ env.IMAGE_BASE }}/worker:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/worker:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -97,6 +103,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: echo "IMAGE_BASE=${{ env.REGISTRY }}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -114,7 +123,7 @@ jobs:
           context: ./web
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/web:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/web:latest
+            ${{ env.IMAGE_BASE }}/web:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/web:latest
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
