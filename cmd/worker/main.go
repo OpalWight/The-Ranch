@@ -88,6 +88,7 @@ func main() {
 
 	ps := pubsub.NewRedisPubSub(redisClient)
 	repo := repository.NewFileRepository(db)
+	producer := queue.NewProducer(redisClient)
 
 	hostname, _ := os.Hostname()
 	consumer := queue.NewConsumer(redisClient, hostname)
@@ -146,7 +147,7 @@ func main() {
 			logger.Info("processing task", "id", task.ID, "type", task.Type)
 
 			start := time.Now()
-			err := processTask(ctx, logger, repo, store, ps, task)
+			err := processTask(ctx, logger, repo, store, ps, producer, task)
 			duration := time.Since(start).Seconds()
 
 			taskType := string(task.Type)
@@ -169,10 +170,10 @@ func main() {
 }
 
 // processTask routes a task to its specific handler based on its type.
-func processTask(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, task queue.Task) error {
+func processTask(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, producer *queue.Producer, task queue.Task) error {
 	switch task.Type {
 	case queue.TaskProcessUpload:
-		return handleProcessUpload(ctx, logger, repo, store, pub, task)
+		return handleProcessUpload(ctx, logger, repo, store, pub, producer, task)
 	case queue.TaskGenerateThumbnail:
 		return handleGenerateThumbnail(ctx, logger, repo, store, task)
 	case queue.TaskCleanupOrphans:
@@ -183,7 +184,7 @@ func processTask(ctx context.Context, logger *slog.Logger, repo *repository.File
 }
 
 // handleProcessUpload verifies a file's integrity and updates its status in the database.
-func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, task queue.Task) error {
+func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *repository.FileRepository, store storage.Storage, pub pubsub.Publisher, producer *queue.Producer, task queue.Task) error {
 	fileID := task.Payload["file_id"]
 	storageKey := task.Payload["storage_key"]
 	expectedChecksum := task.Payload["checksum"]
@@ -237,7 +238,14 @@ func handleProcessUpload(ctx context.Context, logger *slog.Logger, repo *reposit
 
 	// If it's an image, enqueue thumbnail generation
 	if strings.HasPrefix(file.MimeType, "image/") {
-		logger.Info("image detected, thumbnail generation would be enqueued", "file_id", fileID)
+		logger.Info("enqueuing thumbnail generation", "file_id", fileID)
+		_, err := producer.Enqueue(ctx, queue.TaskGenerateThumbnail, map[string]string{
+			"file_id":     fileID,
+			"storage_key": storageKey,
+		})
+		if err != nil {
+			logger.Error("failed to enqueue thumbnail task", "error", err, "file_id", fileID)
+		}
 	}
 
 	return nil

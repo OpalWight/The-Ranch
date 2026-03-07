@@ -51,6 +51,12 @@
 
   // Hover preview
   let hoveredFileId = $state<string | null>(null);
+  let thumbnailLoading = $state(true);
+
+  function handleHover(id: string | null) {
+    hoveredFileId = id;
+    thumbnailLoading = true;
+  }
 
   function toggleSelect(id: string) {
     if (selectedIds.has(id)) {
@@ -400,19 +406,27 @@
             class="row-main" 
             href={downloadUrl(file.id)} 
             download
-            onmouseenter={() => (hoveredFileId = file.id)}
-            onmouseleave={() => (hoveredFileId = null)}
+            onmouseenter={() => handleHover(file.id)}
+            onmouseleave={() => handleHover(null)}
           >
             <span class="icon">{fileIcon(file.mime_type)}</span>
             <span class="row-name">{file.name}</span>
             {#if hoveredFileId === file.id}
               {#if file.thumbnail_key}
                 <div class="preview-popup">
-                  <img src={thumbnailUrl(file.id)} alt="Preview" />
+                  {#if thumbnailLoading}
+                    <div class="preview-loading">Loading...</div>
+                  {/if}
+                  <img 
+                    src={thumbnailUrl(file.id)} 
+                    alt="Preview" 
+                    onload={() => thumbnailLoading = false}
+                    style={thumbnailLoading ? 'display: none' : 'display: block'}
+                  />
                 </div>
               {:else if file.mime_type.startsWith('image/')}
                 <div class="preview-popup">
-                  <div class="preview-loading">Generating preview...</div>
+                  <div class="preview-loading">Unavailable</div>
                 </div>
               {/if}
             {/if}
