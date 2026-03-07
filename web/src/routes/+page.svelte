@@ -405,10 +405,16 @@
           >
             <span class="icon">{fileIcon(file.mime_type)}</span>
             <span class="row-name">{file.name}</span>
-            {#if hoveredFileId === file.id && file.thumbnail_key}
-              <div class="preview-popup">
-                <img src={thumbnailUrl(file.id)} alt="Preview" />
-              </div>
+            {#if hoveredFileId === file.id}
+              {#if file.thumbnail_key}
+                <div class="preview-popup">
+                  <img src={thumbnailUrl(file.id)} alt="Preview" />
+                </div>
+              {:else if file.mime_type.startsWith('image/')}
+                <div class="preview-popup">
+                  <div class="preview-loading">Generating preview...</div>
+                </div>
+              {/if}
             {/if}
           </a>
           <span class="col-size">{formatBytes(file.size_bytes)}</span>
@@ -697,6 +703,23 @@
     padding: 4px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     pointer-events: none;
+    animation: preview-fade-in 0.15s ease-out;
+  }
+  .preview-loading {
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  @keyframes preview-fade-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .preview-popup img {
     max-width: 200px;
@@ -843,6 +866,7 @@
 
   .uploading {
     background: rgba(92, 224, 216, 0.04);
+    cursor: default;
   }
   .upload-info {
     flex: 1;
